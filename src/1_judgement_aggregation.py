@@ -8,49 +8,15 @@ from typing import List, Tuple
 
 
 base_in = Path.cwd() / "data-merged" / "air-exercise-2" / "Part-1"
-base_out = Path.cwd() / "output"
+base_out = Path.cwd() / "data-merged"  # output from previous script
 
 docs: pd.DataFrame = pd.read_csv(base_in / "fira-22.documents.tsv", sep="\t")
 queries: pd.DataFrame = pd.read_csv(base_in / "fira-22.queries.tsv", sep="\t")
 judgements: pd.DataFrame = pd.read_csv(base_in / "fira-22.judgements-anonymized.tsv", sep="\t")
 
-model_name = "bert-base-uncased"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModel.from_pretrained(model_name)
 
-
-def gen_embedding(text: str) -> List[float]:
-    tokens = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
-    embedding = None
-    with torch.no_grad():
-        output = model(**tokens)
-        embedding = output.last_hidden_state.mean(dim=1)  # mean pooling
-    return embedding.numpy()[0].tolist()
-
-
-def gen_doc_embeddings():
-    counter = 0
-    len_docs = docs.shape[0]
-
-    out_path = base_out / "fira-22.documents.embeddings.tsv"
-    f = open(out_path, "w")
-    f.write("doc_id\tdoc_text\tdoc_embedding\n")
-    f.flush()
-
-    for index, row in docs.iterrows():
-        counter += 1
-        progress_percent = counter / len_docs * 100
-        print(f"progress: {progress_percent:.2f}%", end="\r")
-
-        doc_id = row["doc_id"]
-        doc_text = row["doc_text"]
-        doc_embedding = gen_embedding(doc_text)
-
-        f.write(f"{doc_id}\t{doc_text}\t{doc_embedding}\n")
-        f.flush()
-
-    f.close()
-
+doc_embeddings = pd.read_csv(base_out / "fira-22.documents.embeddings.tsv", sep="\t")
+query_embeddings = pd.read_csv(base_out / "fira-22.queries.embeddings.tsv", sep="\t")
 
 # def aggregate_judgements(query_id, judgements, documents, queries):
 #     # Filter judgements for the given query
@@ -104,5 +70,4 @@ def gen_doc_embeddings():
 
 # judgements = prep_judgements(judgements)
 
-if __name__ == "__main__":
-    gen_doc_embeddings()
+print(query_embeddings.head())

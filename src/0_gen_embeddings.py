@@ -8,7 +8,7 @@ from typing import List, Tuple
 
 
 base_in = Path.cwd() / "data-merged" / "air-exercise-2" / "Part-1"
-base_out = Path.cwd() / "output"
+base_out = Path.cwd() / "data-merged"
 
 docs: pd.DataFrame = pd.read_csv(base_in / "fira-22.documents.tsv", sep="\t")
 queries: pd.DataFrame = pd.read_csv(base_in / "fira-22.queries.tsv", sep="\t")
@@ -36,7 +36,7 @@ def gen_doc_embeddings():
     f.write("doc_id\tdoc_text\tdoc_embedding\n")
     f.flush()
 
-    for index, row in docs.iterrows():
+    for _, row in docs.iterrows():
         counter += 1
         progress_percent = counter / len_docs * 100
         print(f"progress: {progress_percent:.2f}%", end="\r")
@@ -60,7 +60,7 @@ def gen_query_embeddings():
     f.write("query_id\tquery_text\tquery_embedding\n")
     f.flush()
 
-    for index, row in queries.iterrows():
+    for _, row in queries.iterrows():
         counter += 1
         progress_percent = counter / len_queries * 100
         print(f"progress: {progress_percent:.2f}%", end="\r")
@@ -76,5 +76,5 @@ def gen_query_embeddings():
 
 
 if __name__ == "__main__":
-    # gen_query_embeddings()
+    gen_query_embeddings()
     gen_doc_embeddings()
