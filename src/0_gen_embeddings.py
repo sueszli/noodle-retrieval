@@ -6,10 +6,6 @@ import torch
 from typing import List
 
 
-"""
-generate embeddings for documents and queries
-"""
-
 base_in = Path.cwd() / "data-merged" / "air-exercise-2" / "Part-1"
 base_out = Path.cwd() / "data-merged"
 
