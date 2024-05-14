@@ -16,7 +16,7 @@ judgements are essentially votes on the relevance / ranking of a document for a 
 
 _data description:_
 
-the origin of the data is unknown.
+-   the origin of the data is unknown.
 
 -   `fira-22-baseline-qrels.tsv`: baseline solution.
 
@@ -27,6 +27,8 @@ the origin of the data is unknown.
     example: `rob_q_FBIS3-10909 Q0 rob_FBIS3-10909 2`
 
     the `Q0` is a placeholder for the rank of the document in the result list. it is not used in this assignment.
+
+    this format is the output we are supposed to generate in the first part of the assignment.
 
 -   `fira-22.documents.tsv`: document text data.
 
