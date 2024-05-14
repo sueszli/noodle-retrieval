@@ -3,9 +3,12 @@ import pandas as pd
 import numpy as np
 from transformers import AutoTokenizer, AutoModel
 import torch
-from torch.nn.functional import cosine_similarity
-from typing import List, Tuple
+from typing import List
 
+
+"""
+generate embeddings for documents and queries
+"""
 
 base_in = Path.cwd() / "data-merged" / "air-exercise-2" / "Part-1"
 base_out = Path.cwd() / "data-merged"

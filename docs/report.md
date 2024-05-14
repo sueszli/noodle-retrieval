@@ -73,6 +73,8 @@ _data description:_
 _hypothesis:_
 
 -   the majority voting heuristic is not good enough.
+-   in addition to the voting, we can use the embeddings of the documents and queries to improve the aggregation of the judgements.
+-   if a document is closer to the query in the latent / embedding space, it is more likely to be relevant.
 
 _algorithm:_
 

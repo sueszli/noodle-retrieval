@@ -1,12 +1,13 @@
 from pathlib import Path
 import pandas as pd
-from pandas.core.series import Series
-import numpy as np
-from transformers import AutoTokenizer, AutoModel
 import torch
 from torch.nn.functional import cosine_similarity
 from typing import List, Tuple
 
+
+"""
+use embeddings to aggregate judgements
+"""
 
 base_in = Path.cwd() / "data-merged" / "air-exercise-2" / "Part-1"
 base_out = Path.cwd() / "data-merged"  # output of previous script
@@ -16,9 +17,27 @@ queries = pd.read_csv(base_out / "fira-22.queries.embeddings.tsv", sep="\t")
 judgements: pd.DataFrame = pd.read_csv(base_in / "fira-22.judgements-anonymized.tsv", sep="\t")
 
 
-judgements = judgements[["relevanceLevel", "queryId", "documentId"]]
+def preprocess_judgements(judgements: pd.DataFrame) -> pd.DataFrame:
+    prev_len = len(judgements)
+    judgements = judgements.dropna().drop_duplicates()
+    assert len(judgements) == prev_len
 
+    judgements = judgements[["relevanceLevel", "queryId", "documentId"]]
+    judgements["relevanceLevel"] = judgements["relevanceLevel"].map(
+        {
+            "0_NOT_RELEVANT": 0,
+            "1_TOPIC_RELEVANT_DOES_NOT_ANSWER": 1,
+            "2_GOOD_ANSWER": 2,
+            "3_PERFECT_ANSWER": 3,
+        }
+    )
+    return judgements
+
+
+judgements = preprocess_judgements(judgements)
+print(judgements.head())
 for _, q in queries.iterrows():
+    # get all judgements for this query
     q_judgements: pd.DataFrame = judgements[judgements["queryId"] == q["query_id"]]
 
     # sort documents in judgements by similarity to query
@@ -31,7 +50,7 @@ for _, q in queries.iterrows():
         sorted_docids.append((j["documentId"], similarity))
     sorted_docids.sort(key=lambda x: x[1], reverse=True)
 
-    # iterate over votes and stop at the first good or perfect answer
+    # take the first relevant document
     aggregated_judgement = "0_NOT_RELEVANT"
     for doc_id, similarity in sorted_docids:
         print(doc_id, similarity)
@@ -39,3 +58,7 @@ for _, q in queries.iterrows():
         if vote in ["2_GOOD_ANSWER", "3_PERFECT_ANSWER"]:
             aggregated_judgement = vote
             break
+
+    # get result
+    # rob_q_FBIS3-10909 "Q0" rob_FBIS3-10909 2
+    # queryId, Q0, documentId, aggregated judgement
