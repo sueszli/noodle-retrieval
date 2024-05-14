@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+from pandas.core.series import Series
 import numpy as np
 from transformers import AutoTokenizer, AutoModel
 import torch
@@ -15,40 +16,26 @@ queries = pd.read_csv(base_out / "fira-22.queries.embeddings.tsv", sep="\t")
 judgements: pd.DataFrame = pd.read_csv(base_in / "fira-22.judgements-anonymized.tsv", sep="\t")
 
 
-# def aggregate_judgements(query_id, judgements, documents, queries):
-#     # Filter judgements for the given query
-#     query_judgements = judgements[judgements["queryId"] == query_id]
-
-#     # Get the query embedding
-#     query_embedding = queries[queries["query_id"] == query_id]["query_embedding"].values[0]
-
-#     # Calculate similarity scores
-#     similarity_scores = []
-#     for index, row in query_judgements.iterrows():
-#         doc_id = row["documentId"]
-#         doc_embedding = documents[documents["doc_id"] == doc_id]["doc_embedding"].values[0]
-#         similarity = cosine_similarity(query_embedding, doc_embedding)
-#         similarity_scores.append((doc_id, similarity[0][0]))
-
-#     # Sort documents by similarity score
-#     similarity_scores.sort(key=lambda x: x[1], reverse=True)
-
-#     # Aggregate judgements based on similarity
-#     aggregated_judgement = "0_NOT_RELEVANT"  # Default to not relevant
-#     for doc_id, similarity in similarity_scores:
-#         judgement = judgements[(judgements["documentId"] == doc_id) & (judgements["queryId"] == query_id)]["relevanceLevel"].values[0]
-#         if judgement in ["2_GOOD_ANSWER", "3_PERFECT_ANSWER"]:
-#             aggregated_judgement = judgement
-#             break  # Stop at the first good or perfect answer
-
-#     return aggregated_judgement
-
-
 judgements = judgements[["relevanceLevel", "queryId", "documentId"]]
 
-for _, row in queries.iterrows():
-    query_id = row["query_id"]
-    query_embedding = row["query_embedding"]
+for _, q in queries.iterrows():
+    q_judgements: pd.DataFrame = judgements[judgements["queryId"] == q["query_id"]]
 
-    query_judgements = judgements[judgements["queryId"] == query_id]
-    similarity_scores = []
+    # sort documents in judgements by similarity to query
+    sorted_docids: List[Tuple[str, float]] = []
+    for _, j in q_judgements.iterrows():
+        d: pd.DataFrame = docs[docs["doc_id"] == j["documentId"]]
+        q_embedding: torch.tensor = torch.tensor([float(i) for i in q["query_embedding"].strip("[]").split(", ")]).unsqueeze(0)  # type: ignore
+        d_embedding: torch.tensor = torch.tensor([float(i) for i in d["doc_embedding"].values[0].strip("[]").split(", ")]).unsqueeze(0)  # type: ignore
+        similarity: float = cosine_similarity(q_embedding, d_embedding).item()
+        sorted_docids.append((j["documentId"], similarity))
+    sorted_docids.sort(key=lambda x: x[1], reverse=True)
+
+    # iterate over votes and stop at the first good or perfect answer
+    aggregated_judgement = "0_NOT_RELEVANT"
+    for doc_id, similarity in sorted_docids:
+        print(doc_id, similarity)
+        vote = judgements[(judgements["documentId"] == doc_id) & (judgements["queryId"] == q["query_id"])]["relevanceLevel"].values[0]
+        if vote in ["2_GOOD_ANSWER", "3_PERFECT_ANSWER"]:
+            aggregated_judgement = vote
+            break
