@@ -1,4 +1,4 @@
-# Team information
+Assignment: https://github.com/tuwien-information-retrieval/air-24-template/blob/main/assignment_2.md
 
 Student 1 ID + Name: Yahya Jabary 11912007
 
@@ -8,11 +8,7 @@ Student 3 ID + Name:
 
 Student 4 ID + Name:
 
-# Report
-
-Assignment: https://github.com/tuwien-information-retrieval/air-24-template/blob/main/assignment_2.md
-
-## Part 1 - Test Collection Preparation
+# Part 1 - Test Collection Preparation
 
 the first step is to aggregate multiple judgements for each document-query pair into a single one.
 
@@ -82,13 +78,13 @@ _algorithm:_
 
 <br><br>
 
-## Part 2 - Neural Re-Ranking
+# Part 2 - Neural Re-Ranking
 
 knrm model, see: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/drmm.py#L37
 
 <br><br>
 
-## Part 3 - Extractive QA
+# Part 3 - Extractive QA
 
 <br><br>
 
