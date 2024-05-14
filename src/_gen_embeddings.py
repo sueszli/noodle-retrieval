@@ -76,4 +76,5 @@ def gen_query_embeddings():
 
 
 if __name__ == "__main__":
-    gen_doc_embeddings()
+    # gen_doc_embeddings()
+    gen_query_embeddings()
