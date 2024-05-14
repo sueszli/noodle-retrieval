@@ -19,7 +19,10 @@ def preprocess_judgements(judgements: pd.DataFrame) -> pd.DataFrame:
     judgements = judgements.dropna().drop_duplicates()
     assert len(judgements) == prev_len
 
+    # remove irrelevant columns
     judgements = judgements[["relevanceLevel", "queryId", "documentId"]]
+
+    # map votes to integers
     judgements["relevanceLevel"] = judgements["relevanceLevel"].map(
         {
             "0_NOT_RELEVANT": 0,
@@ -31,7 +34,24 @@ def preprocess_judgements(judgements: pd.DataFrame) -> pd.DataFrame:
     return judgements
 
 
+def preprocess_queries(queries: pd.DataFrame) -> pd.DataFrame:
+    # remove queries without judgements
+    queries = queries[queries["query_id"].isin(judgements["queryId"].unique())]
+
+    len_j = len(judgements["queryId"].unique())
+    len_q = len(queries["query_id"].unique())
+    print(len_j, len_q)  # (4175, 4177)
+    assert len_j == len_q
+
+    return queries
+
+
+"""
+aggregate judgements: find a single judgement for each query
+"""
 judgements = preprocess_judgements(judgements)
+queries = preprocess_queries(queries)
+
 
 for _, q in queries.iterrows():
     q_judgements: pd.DataFrame = judgements[judgements["queryId"] == q["query_id"]]

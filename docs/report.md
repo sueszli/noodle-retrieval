@@ -73,14 +73,16 @@ _data description:_
 _hypothesis:_
 
 -   the majority voting heuristic is not good enough.
--   in addition to the voting, we can use the embeddings of the documents and queries to improve the aggregation of the judgements.
--   if a document is closer to the query in the latent / embedding space, it is more likely to be relevant.
--   **idea 1:** use the doc-query similarity (range: 0-1) as a weight for the judgement values. sum up the weighted judgements and take the majority. → turned out to be too slow to compute.
--   **idea 2:** use the doc-query similarity to sort the judgements. accept the first 2 or 3 vote that are the closest to the query, otherwise assume 0. → this is the approach we implemented.
+-   the cosine similarity in the embedding space can be used to improve the judgement aggregation. if a document is closer to the query, we should give more weight to the judgement.
 
 _algorithm:_
 
--   ???
+-   **idea 1:** multiply the normalized doc-query similarity (range 0-1) with the judgement value and sum them up to get the final judgement. → turned out to be too slow to compute.
+-   **idea 2:** sort the judgement docs of each query by the doc-query similarity and take the first first vote that is either a "2" or "3" when sorted by similarity. otherwise assume the value "0". → this is the algorithm we implemented!
+
+_meta-judgement:_
+
+-   TODO
 
 <br><br>
 
