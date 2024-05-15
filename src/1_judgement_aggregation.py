@@ -4,6 +4,12 @@ import torch
 from torch.nn.functional import cosine_similarity
 from pathlib import Path
 
+"""
+merge multiple (query, document, vote) tuples on the same (query, document) pair.
+
+write the aggregated judgements to a file.
+"""
+
 
 base_in = Path.cwd() / "data-merged" / "data-merged" / "air-exercise-2" / "Part-1"
 base_in_prev = Path.cwd() / "data-merged" / "data-merged"  # output of previous script
@@ -61,9 +67,6 @@ def get_cos_similarity(q_id: str, d_id: str) -> float:
     return sim
 
 
-"""
-merge multiple (query, document, vote) tuples on the same (query, document) pair.
-"""
 docs = preprocess_docs(docs)  # "doc_id", "doc_embedding"
 queries = preprocess_queries(queries)  # "query_id", "query_embedding"
 judgements = preprocess_judgements(judgements)  # "relevanceLevel", "queryId", "documentId"
