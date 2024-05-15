@@ -24,8 +24,6 @@ from pathlib import Path
 from typing import Dict, Iterator, List
 import logging
 
-from data_loading import BlingFireTokenizer, IrTripleDatasetReader, IrLabeledTupleDatasetReader
-
 
 prepare_environment(Params({}))  # seed
 
