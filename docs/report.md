@@ -10,9 +10,7 @@ Student 4 ID + Name:
 
 # Part 1 - Test Collection Preparation
 
-the first step is to aggregate multiple judgements for each document-query pair into a single one.
-
-judgements are essentially votes on the relevance / ranking of a document for a given query. the goal is to aggregate these votes into a single relevance / ranking label for each document-query pair.
+the first step is to merge / aggregate multiple (query x document, vote) judgement-tuples into a single one, should there be multiple votes for the same query-document pair. the most straightforward way to do this is to take the majority vote.
 
 _data description:_
 

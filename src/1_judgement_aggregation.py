@@ -1,5 +1,6 @@
 from pathlib import Path
 import pandas as pd
+from pandas.core.groupby.generic import DataFrameGroupBy
 import numpy as np
 import torch
 from torch.nn.functional import cosine_similarity
@@ -14,12 +15,38 @@ queries = pd.read_csv(base_out / "fira-22.queries.embeddings.tsv", sep="\t")
 judgements: pd.DataFrame = pd.read_csv(base_in / "fira-22.judgements-anonymized.tsv", sep="\t")
 
 
+def preprocess_docs(docs: pd.DataFrame) -> pd.DataFrame:
+    # drop columns
+    docs = docs[["doc_id", "doc_embedding"]]
+
+    # remove documents without judgements
+    docs = docs[docs["doc_id"].isin(judgements["documentId"].unique())]
+    len_j = len(judgements["documentId"].unique())
+    len_d = len(docs["doc_id"].unique())
+    assert len_j == len_d
+
+    return docs
+
+
+def preprocess_queries(queries: pd.DataFrame) -> pd.DataFrame:
+    # drop columns
+    queries = queries[["query_id", "query_embedding"]]
+
+    # remove queries without judgements
+    queries = queries[queries["query_id"].isin(judgements["queryId"].unique())]
+    len_j = len(judgements["queryId"].unique())
+    len_q = len(queries["query_id"].unique())
+    assert len_j == len_q
+
+    return queries
+
+
 def preprocess_judgements(judgements: pd.DataFrame) -> pd.DataFrame:
     prev_len = len(judgements)
     judgements = judgements.dropna().drop_duplicates()
     assert len(judgements) == prev_len
 
-    # remove irrelevant columns
+    # remove columns
     judgements = judgements[["relevanceLevel", "queryId", "documentId"]]
 
     # map votes to integers
@@ -34,24 +61,21 @@ def preprocess_judgements(judgements: pd.DataFrame) -> pd.DataFrame:
     return judgements
 
 
-def preprocess_queries(queries: pd.DataFrame) -> pd.DataFrame:
-    # remove queries without judgements
-    queries = queries[queries["query_id"].isin(judgements["queryId"].unique())]
-
-    len_j = len(judgements["queryId"].unique())
-    len_q = len(queries["query_id"].unique())
-    print(len_j, len_q)  # (4175, 4177)
-    assert len_j == len_q
-
-    return queries
+def get_cos_similarity(q_id: str, d_id: str) -> float:
+    q_embedding: torch.tensor = torch.tensor([float(i) for i in queries[queries["query_id"] == q_id]["query_embedding"].values[0].strip("[]").split(", ")]).unsqueeze(0)  # type: ignore
+    d_embedding: torch.tensor = torch.tensor([float(i) for i in docs[docs["doc_id"] == d_id]["doc_embedding"].values[0].strip("[]").split(", ")]).unsqueeze(0)  # type: ignore
+    return cosine_similarity(q_embedding, d_embedding).item()
 
 
 """
-aggregate judgements: find a single judgement for each query
+merge multiple (query, document, relevance) tuples into one
 """
-judgements = preprocess_judgements(judgements)
-queries = preprocess_queries(queries)
+docs = preprocess_docs(docs)  # "doc_id", "doc_embedding"
+queries = preprocess_queries(queries)  # "query_id", "query_embedding"
+judgements = preprocess_judgements(judgements)  # "relevanceLevel", "queryId", "documentId"
 
+# each query is unique and can have multiple documents
+# each document is unique and can have multiple relevance levels
 
 for _, q in queries.iterrows():
     q_judgements: pd.DataFrame = judgements[judgements["queryId"] == q["query_id"]]
@@ -59,11 +83,8 @@ for _, q in queries.iterrows():
     # sort documents in judgements by similarity to query
     docid_sim: List[Tuple[str, float]] = []
     for idx, j in q_judgements.iterrows():
-        d: pd.DataFrame = docs[docs["doc_id"] == j["documentId"]]
-        q_embedding: torch.tensor = torch.tensor([float(i) for i in q["query_embedding"].strip("[]").split(", ")]).unsqueeze(0)  # type: ignore
-        d_embedding: torch.tensor = torch.tensor([float(i) for i in d["doc_embedding"].values[0].strip("[]").split(", ")]).unsqueeze(0)  # type: ignore
-        similarity: float = cosine_similarity(q_embedding, d_embedding).item()
-        docid_sim.append((j["documentId"], similarity))
+        sim = get_cos_similarity(q["query_id"], j["documentId"])
+        docid_sim.append((j["documentId"], sim))
 
     # algorithm 1: get sum of judgements weighted by similarity
     # total_sim = sum([similarity for _, similarity in docid_sim])
