@@ -31,11 +31,12 @@ conda init zsh
 conda init bash
 exit # restart shell
 
+conda config --set auto_activate_base false # disable auto-activation
 conda config --env --set subdir osx-64 # emulate x86_64
 
 # ------------------------------------------- start
-conda create --yes --name myenv
-conda activate myenv
+conda create --yes --name noodle-retrieval
+conda activate noodle-retrieval
 
 conda install --yes --channel conda-forge python=3.9
 
@@ -44,7 +45,7 @@ conda install --yes --channel conda-forge numpy pandas matplotlib seaborn
 
 # ------------------------------------------- stop
 conda deactivate
-conda remove --yes --name myenv --all
+conda remove --yes --name noodle-retrieval --all
 
 # ------------------------------------------- verify cleanup
 conda env list

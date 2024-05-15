@@ -23,4 +23,4 @@ RUN pip install numpy pandas matplotlib seaborn
 # CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--allow-root", "--no-browser", "--ServerApp.token=''", "--ServerApp.password=''", "--ServerApp.allow_origin='*'", "--ServerApp.disable_check_xsrf=True", "--ServerApp.allow_root=True", "--ServerApp.open_browser=False", "--ServerApp.disable_check_xsrf=True", "--ServerApp.disable_check_xsrf=True"]
 # EXPOSE 8888
 
-# CMD ["tail", "-f", "/dev/null"]
+CMD ["tail", "-f", "/dev/null"]

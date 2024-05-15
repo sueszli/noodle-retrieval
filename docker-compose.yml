@@ -1,3 +1,5 @@
+# vscode extension access: https://github.com/microsoft/vscode-remote-release/issues/8169#issuecomment-1543987445 (?)
+
 services:
     main:
         container_name: noodle-retrieval
@@ -19,3 +21,5 @@ services:
         # map ports to host
         ports:
             - '8888:8888'
+
+        command: /bin/sh -c "while sleep 1000; do :; done"
