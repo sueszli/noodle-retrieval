@@ -204,6 +204,8 @@ Neural re-ranking is a technique to improve the quality of search results by usi
 
 -   `triples.train.tsv`: Train triplets
 
+    Format: `query_text, positive_document_text, negative_document_text`
+
 -   `glove.42B.300d.txt`: GloVe embeddings
 
     Pre-trained glove embedding from: https://nlp.stanford.edu/projects/glove/

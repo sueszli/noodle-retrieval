@@ -18,7 +18,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 
 from overrides import overrides
-from blingfire import *
+from blingfire import text_to_words
 
 from pathlib import Path
 from typing import Dict, Iterator, List
@@ -26,24 +26,17 @@ import logging
 
 
 prepare_environment(Params({}))  # seed
-
-
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 class BlingFireTokenizer:
-    """
-    basic tokenizer using bling fire library
-    """
-
     def tokenize(self, sentence: str) -> List[Token]:
         return [Token(t) for t in text_to_words(sentence).split()]
 
 
 class IrTripleDatasetReader(DatasetReader):
     """
-    Read a tsv file containing triple sequences, and create a dataset suitable for a
-    neural IR model, or any model with a matching API.
+    Read a tsv file containing triple sequences, and create a dataset suitable for a neural IR model, or any model with a matching API.
     Expected format for each input line: <query_sequence_string>\t<pos_doc_sequence_string>\t<neg_doc_sequence_string>
     The output of ``read`` is a list of ``Instance`` s with the fields:
         query_tokens: ``TextField`` and
@@ -330,6 +323,11 @@ assert Path(config["train_data"]).exists()
 assert Path(config["validation_data"]).exists()
 assert Path(config["test_data"]).exists()
 
+
+"""
+load data, define model
+"""
+
 # get words that occur at least 10 times
 vocab = Vocabulary.from_files(config["vocab_directory"])
 
@@ -337,45 +335,42 @@ vocab = Vocabulary.from_files(config["vocab_directory"])
 tokens_embedder = Embedding(vocab=vocab, pretrained_file=str(config["pre_trained_embedding"]), embedding_dim=300, trainable=True, padding_index=0)
 word_embedder = BasicTextFieldEmbedder({"tokens": tokens_embedder})
 
-# define model, optimizer
+# define model
 if config["model"] == "knrm":
     model = KNRM(word_embedder, n_kernels=11)
 elif config["model"] == "tk":
     model = TK(word_embedder, n_kernels=11, n_layers=2, n_tf_dim=300, n_tf_heads=10)
-
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
 print("Model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 print("Network:", model)
 
-#
-# train
-#
 
-# _triple_reader = IrTripleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
-# _triple_reader = _triple_reader.read(config["train_data"])
-# _triple_reader.index_with(vocab)
-# loader = PyTorchDataLoader(_triple_reader, batch_size=32)
+"""
+train
+"""
 
+_triple_reader = IrTripleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
+_triple_reader = _triple_reader.read(config["train_data"])
+_triple_reader.index_with(vocab)
+loader = PyTorchDataLoader(_triple_reader, batch_size=32)
 # for epoch in range(2):
-
 #     for batch in Tqdm.tqdm(loader):
-#         # todo train loop
+#         # TODO: train loop
 #         pass
 
 
-#
-# eval (duplicate for validation inside train loop - but rename "loader", since
-# otherwise it will overwrite the original train iterator, which is instantiated outside the loop)
-#
+"""
+eval
+"""
 
-# _tuple_reader = IrLabeledTupleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
-# _tuple_reader = _tuple_reader.read(config["test_data"])
-# _tuple_reader.index_with(vocab)
-# loader = PyTorchDataLoader(_tuple_reader, batch_size=128)
+# duplicate for validation inside train loop - but rename "loader",
+# otherwise it will overwrite the original train iterator, which is instantiated outside the loop
+_tuple_reader = IrLabeledTupleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
+_tuple_reader = _tuple_reader.read(config["test_data"])
+_tuple_reader.index_with(vocab)
+loader = PyTorchDataLoader(_tuple_reader, batch_size=128)
 
 # for batch in Tqdm.tqdm(loader):
 #     # todo test loop
 #     # todo evaluation
 #     pass
-
