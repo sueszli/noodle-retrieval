@@ -1,6 +1,5 @@
 FROM --platform=linux/amd64 python:3.6.15-slim-bullseye
 
-# org specific allennlp dependencies
 RUN apt-get update && apt-get install -y make build-essential
 RUN pip install jsonnet --no-build-isolation  
 RUN pip install --upgrade pip
@@ -11,20 +10,17 @@ RUN pip install PyYAML==5.4
 RUN pip install transformers==3.5.1
 RUN pip install --find-links https://download.pytorch.org/whl/torch_stable.html torch==1.6.0
 
-RUN pip install overrides==7.7.0
-RUN pip install transformers==4.37.2
+RUN pip install overrides
+RUN pip install transformers
 
 # convenience
-RUN apt-get install -y \
-    git
-RUN pip install \
-    numpy pandas \
-    matplotlib seaborn
+RUN apt-get install -y git
+RUN pip install numpy pandas matplotlib seaborn
 
 # jupyter server
-RUN pip install jupyter jupyterlab jupyter_contrib_nbextensions
-ENV JUPYTER_ENABLE_LAB=yes
-CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--allow-root", "--no-browser", "--ServerApp.token=''", "--ServerApp.password=''", "--ServerApp.allow_origin='*'", "--ServerApp.disable_check_xsrf=True", "--ServerApp.allow_root=True", "--ServerApp.open_browser=False", "--ServerApp.disable_check_xsrf=True", "--ServerApp.disable_check_xsrf=True"]
-EXPOSE 8888
+# RUN pip install jupyter jupyterlab jupyter_contrib_nbextensions
+# ENV JUPYTER_ENABLE_LAB=yes
+# CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--allow-root", "--no-browser", "--ServerApp.token=''", "--ServerApp.password=''", "--ServerApp.allow_origin='*'", "--ServerApp.disable_check_xsrf=True", "--ServerApp.allow_root=True", "--ServerApp.open_browser=False", "--ServerApp.disable_check_xsrf=True", "--ServerApp.disable_check_xsrf=True"]
+# EXPOSE 8888
 
 # CMD ["tail", "-f", "/dev/null"]

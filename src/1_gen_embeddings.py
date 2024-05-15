@@ -9,7 +9,6 @@ from typing import List
 generate embeddings of documents and queries for judgement aggregation
 """
 
-
 base_in = Path.cwd() / "data-merged" / "data-merged" / "air-exercise-2" / "Part-1"
 base_out = Path.cwd() / "data-merged" / "data-merged"
 

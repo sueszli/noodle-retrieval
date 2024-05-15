@@ -2,8 +2,6 @@
 data loading for reranking of models
 """
 
-# based on: https://github.com/allenai/allennlp/blob/master/allennlp/data/dataset_readers/seq2seq.py
-
 from typing import Dict, List
 import logging
 
