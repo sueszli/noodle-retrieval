@@ -12,7 +12,7 @@ Student 4 ID + Name:
 
 the first step is to merge / aggregate multiple (query x document, vote) judgement-tuples into a single one, should there be multiple votes for the same query-document pair. the most straightforward way to do this is to take the majority vote.
 
-_data description:_
+## data description
 
 -   the origin of the data is unknown.
 
@@ -68,6 +68,8 @@ _data description:_
 
     format: `query_id, query_text, query_embedding`
 
+## algorithm
+
 _hypotheses:_
 
 -   the majority voting heuristic is not good enough.
@@ -79,21 +81,11 @@ _hypotheses:_
 
 _algorithm:_
 
-_meta-judgement:_
-
 -   TODO
 
-a little sanity check:
+## meta judgement
 
-```bash
-noodle-retrieval git:main
-❯ cat output/fira-22.qrels.tsv | wc -l
-   24189
-
-noodle-retrieval git:main
-❯ cat data-merged/data-merged/air-exercise-2/Part-1/fira-22.baseline-qrels.tsv | wc -l
-   24189
-```
+-   TODO
 
 <br><br>
 
