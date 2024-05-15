@@ -1,10 +1,9 @@
-from pathlib import Path
 import pandas as pd
 from pandas.core.groupby.generic import DataFrameGroupBy
 import numpy as np
 import torch
 from torch.nn.functional import cosine_similarity
-from typing import List, Tuple
+from pathlib import Path
 
 
 base_in = Path.cwd() / "data-merged" / "air-exercise-2" / "Part-1"
@@ -64,46 +63,33 @@ def preprocess_judgements(judgements: pd.DataFrame) -> pd.DataFrame:
 def get_cos_similarity(q_id: str, d_id: str) -> float:
     q_embedding: torch.tensor = torch.tensor([float(i) for i in queries[queries["query_id"] == q_id]["query_embedding"].values[0].strip("[]").split(", ")]).unsqueeze(0)  # type: ignore
     d_embedding: torch.tensor = torch.tensor([float(i) for i in docs[docs["doc_id"] == d_id]["doc_embedding"].values[0].strip("[]").split(", ")]).unsqueeze(0)  # type: ignore
-    return cosine_similarity(q_embedding, d_embedding).item()
+    sim: float = cosine_similarity(q_embedding, d_embedding).item()
+    assert 0 <= sim <= 1
+    return sim
 
 
 """
-merge multiple (query, document, relevance) tuples into one
+merge multiple (query, document, vote) tuples on the same (query, document) pair.
 """
 docs = preprocess_docs(docs)  # "doc_id", "doc_embedding"
 queries = preprocess_queries(queries)  # "query_id", "query_embedding"
 judgements = preprocess_judgements(judgements)  # "relevanceLevel", "queryId", "documentId"
 
-# each query is unique and can have multiple documents
-# each document is unique and can have multiple relevance levels
-
 for _, q in queries.iterrows():
-    q_judgements: pd.DataFrame = judgements[judgements["queryId"] == q["query_id"]]
+    q_id = q["query_id"]
+    d_ids = judgements[judgements["queryId"] == q_id]["documentId"].unique()
 
-    # sort documents in judgements by similarity to query
-    docid_sim: List[Tuple[str, float]] = []
-    for idx, j in q_judgements.iterrows():
-        sim = get_cos_similarity(q["query_id"], j["documentId"])
-        docid_sim.append((j["documentId"], sim))
+    for doc_id in d_ids:
+        votes = judgements[judgements["documentId"] == doc_id]["relevanceLevel"].values
+        sim = get_cos_similarity(q_id, doc_id)
 
-    # algorithm 1: get sum of judgements weighted by similarity
-    # total_sim = sum([similarity for _, similarity in docid_sim])
-    # get_vote = lambda doc_id: judgements[(judgements["documentId"] == doc_id) & (judgements["queryId"] == q["query_id"])]["relevanceLevel"].values[0]
-    # aggregated_judgement = np.sum([(sim / total_sim) * get_vote(doc_id) for doc_id, sim in docid_sim])
-    # aggregated_judgement = round(aggregated_judgement)
+        # our additional vote
+        sim_vote = 3 if sim >= 0.75 else 2 if sim >= 0.5 else 1 if sim >= 0.25 else 0
+        votes = np.append(votes, sim_vote)
 
-    # algorithm 2: take the first relevant document
-    docid_sim = sorted(docid_sim, key=lambda x: x[1], reverse=True)
-    aggregated_judgement = 0
-    for doc_id, similarity in docid_sim:
-        print(doc_id, similarity)
-        vote = judgements[(judgements["documentId"] == doc_id) & (judgements["queryId"] == q["query_id"])]["relevanceLevel"].values[0]
-        if vote in [2, 3]:
-            aggregated_judgement = vote
-            break
+        agg_vote = int(np.median(votes))
+        # agg_vote = int(np.mean(votes))
+        # agg_vote = int(Counter(votes).most_common(1)[0][0])  # majority vote
+        assert agg_vote in [0, 1, 2, 3]
 
-    print(q["query_id"], "Q0", docid_sim[0][0], aggregated_judgement)
-
-    # get result
-    # rob_q_FBIS3-10909 "Q0" rob_FBIS3-10909 2
-    # queryId, Q0, documentId, aggregated judgement
+        print(f"({q_id}, {doc_id}) with sim_vote: {agg_vote}")

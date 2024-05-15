@@ -68,15 +68,16 @@ _data description:_
 
     format: `query_id, query_text, query_embedding`
 
-_hypothesis:_
+_hypotheses:_
 
 -   the majority voting heuristic is not good enough.
--   the cosine similarity in the embedding space can be used to improve the judgement aggregation. if a document is closer to the query, we should give more weight to the judgement.
+-   content based: (our chosen method)
+    -   documents closer to the query in the latent / embedding space should be rated higher.
+-   voter based:
+    -   voters with a higher overall agreement rate should have a higher weight in the majority voting.
+    -   voters with more voting experience should have a higher weight in the majority voting.
 
 _algorithm:_
-
--   **idea 1:** multiply the normalized doc-query similarity (range 0-1) with the judgement value and sum them up to get the final judgement. → turned out to be too slow to compute.
--   **idea 2:** sort the judgement docs of each query by the doc-query similarity and take the first first vote that is either a "2" or "3" when sorted by similarity. otherwise assume the value "0". → this is the algorithm we implemented!
 
 _meta-judgement:_
 
