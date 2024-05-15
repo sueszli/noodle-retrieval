@@ -198,19 +198,23 @@ Neural re-ranking is a technique to improve the quality of search results by usi
 
     With 2.000 queries each and the top 40 BM25 results per query.
 
+    Format: `query_id, doc_id, query_tokens, doc_tokens`
+
 -   `msmarco_queries.validation.tsv`, `msmarco_queries.test.tsv`: query text data.
 
     Format: `query_id, query_text` (no header)
 
--   `triples.train.tsv`: Train triplets
+-   `triples.train.tsv`: train triplets
 
     Format: `query_text, positive_document_text, negative_document_text`
 
--   `glove.42B.300d.txt`: GloVe embeddings
+-   `glove.42B.300d.txt`: gloVe embeddings
 
     Pre-trained glove embedding from: https://nlp.stanford.edu/projects/glove/
 
     Common Crawl (42B tokens, 1.9M vocab, uncased, 300d vectors, 1.75 GB download)
+
+    Format: `word, embedding`
 
 <br><br>
 

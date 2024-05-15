@@ -29,6 +29,9 @@ prepare_environment(Params({}))  # seed
 logger = logging.getLogger(__name__)
 
 
+# -------------------------------------------------------------------------------------------------------------- file reader, tokenizer
+
+
 class BlingFireTokenizer:
     def tokenize(self, sentence: str) -> List[Token]:
         return [Token(t) for t in text_to_words(sentence).split()]
@@ -36,7 +39,7 @@ class BlingFireTokenizer:
 
 class IrTripleDatasetReader(DatasetReader):
     """
-    convert `triples.train.tsv` into 3 tokenized `TextField`s for query, positive-doc, negative-doc.
+    convert `triples.train.tsv` into 3 `TextField`s - which are a list of string tokens.
     """
 
     def __init__(
@@ -51,6 +54,8 @@ class IrTripleDatasetReader(DatasetReader):
 
     @overrides
     def _read(self, file_path):
+        # split line in 3 parts
+
         with open(cached_path(file_path), "r", encoding="utf8") as data_file:
             # logger.info("Reading instances from lines in file at: %s", file_path)
             for line_num, line in enumerate(data_file):
@@ -67,6 +72,8 @@ class IrTripleDatasetReader(DatasetReader):
 
     @overrides
     def text_to_instance(self, query_sequence: str, doc_pos_sequence: str, doc_neg_sequence: str) -> Instance:
+        # tokenize each of 3 parts
+
         query_tokenized = self._tokenizer.tokenize(query_sequence)
         if self.max_query_length > -1:
             query_tokenized = query_tokenized[: self.max_query_length]
@@ -90,14 +97,7 @@ class IrTripleDatasetReader(DatasetReader):
 
 class IrLabeledTupleDatasetReader(DatasetReader):
     """
-    Read a tsv file containing labeled tuple sequences, and create a dataset suitable for a
-    neural IR model, or any model with a matching API.
-
-    The output of ``read`` is a list of ``Instance`` s with the fields:
-        "query_id",
-        "doc_id",
-        "query_tokens",
-        "doc_tokens"
+    convert `msmarco_tuples.test.tsv` into 4 `TextField`s - which are a list of string tokens.
     """
 
     def __init__(
@@ -112,6 +112,8 @@ class IrLabeledTupleDatasetReader(DatasetReader):
 
     @overrides
     def _read(self, file_path):
+        # split line in 4 parts
+
         with open(cached_path(file_path), "r", encoding="utf8") as data_file:
             # logger.info("Reading instances from lines in file at: %s", file_path)
             for line_num, line in enumerate(data_file):
@@ -128,6 +130,8 @@ class IrLabeledTupleDatasetReader(DatasetReader):
 
     @overrides
     def text_to_instance(self, query_id: str, doc_id: str, query_sequence: str, doc_sequence: str) -> Instance:
+        # tokenize each of 4 parts
+
         query_id_field = MetadataField(query_id)
         doc_id_field = MetadataField(doc_id)
 
@@ -146,7 +150,7 @@ class IrLabeledTupleDatasetReader(DatasetReader):
         return Instance({"query_id": query_id_field, "doc_id": doc_id_field, "query_tokens": query_field, "doc_tokens": doc_field})
 
 
-# --------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------- models
 
 
 class KNRM(nn.Module):
@@ -293,7 +297,8 @@ class TK(nn.Module):
         return l_sigma
 
 
-# --------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------- logic
+
 
 base = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-2"
 
