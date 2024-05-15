@@ -178,21 +178,31 @@ Neural re-ranking is a technique to improve the quality of search results by usi
 
 ## Data description
 
--   `allen_vocab_lower_{5/10}`: directory containing the vocabulary files for the AllenNLP model.
+-   `allen_vocab_lower_{5/10}`: AllenNLP vocabulary
 
-    Used as argument for `from allennlp.data.vocabulary import Vocabulary`.
+    Comes in two sizes. Based on words that occur at least 5 or 10 times in the collection, where 5 is the more compute intensive but also more accurate version.
+
+    Used as the argument for `from allennlp.data.vocabulary import Vocabulary`.
 
     see: https://docs.allennlp.org/main/api/data/vocabulary/
 
--   `fira-22.tuples.tsv`, `msmarco_tuples.validation.tsv`, `msmarco_tuples.test.tsv`: ???
+-   `msmarco_qrels.txt`: relevance judgments
 
--   `msmarco_qrels.txt`: ???
+    In this case the relevance judgments are binary (0 or 1), where the existence of a line in the file indicates relevance.
+
+    Format: `query_id, 0, document_id, 1`.
+
+    One file covers both validation & test set.
+
+-   `fira-22.tuples.tsv`, `msmarco_tuples.validation.tsv`, `msmarco_tuples.test.tsv`: evaluation tuples
+
+    With 2.000 queries each and the top 40 BM25 results per query.
 
 -   `msmarco_queries.validation.tsv`, `msmarco_queries.test.tsv`: query text data.
 
     Format: `query_id, query_text` (no header)
 
--   `triples.train.tsv`: ???
+-   `triples.train.tsv`: Train triplets
 
 <br><br>
 
