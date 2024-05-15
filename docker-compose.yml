@@ -1,5 +1,3 @@
-# vscode extension access: https://github.com/microsoft/vscode-remote-release/issues/8169#issuecomment-1543987445 (?)
-
 services:
     main:
         container_name: noodle-retrieval

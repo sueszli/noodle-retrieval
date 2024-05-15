@@ -45,6 +45,4 @@ pip install -r requirements.txt
 # ------------------------------------------- stop
 conda deactivate
 conda remove --yes --name noodle-retrieval --all
-
-# ------------------------------------------- verify cleanup
 conda env list

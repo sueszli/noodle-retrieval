@@ -26,7 +26,8 @@ echo "untarred data-merged/merged.tar.gz"
 # ------------------------------------------- start
 docker-compose up
 
-docker exec -it noodle-retrieval /bin/bash
+docker ps --all
+docker exec -it example-project /bin/bash
 open http://localhost:8888/lab
 
 # ------------------------------------------- stop
@@ -42,7 +43,6 @@ yes | docker volume prune
 yes | docker network prune
 yes | docker system prune
 
-# ------------------------------------------- verify cleanup
 docker ps --all
 docker images
 docker system df
