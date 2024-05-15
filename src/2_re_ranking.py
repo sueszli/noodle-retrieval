@@ -11,6 +11,10 @@ from allennlp.data.tokenizers import Tokenizer
 from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 from allennlp.data.tokenizers.token import Token
 from allennlp.modules.token_embedders import Embedding
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+from allennlp.modules.matrix_attention.cosine_matrix_attention import CosineMatrixAttention
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder, TextFieldEmbedder
 
 import torch
