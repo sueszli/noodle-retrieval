@@ -172,6 +172,18 @@ Just using the mode of the expert votes would be more efficient and almost as ef
 
 Source code for KNRM model: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
 
+## Data description
+
+-   `allen_vocab_lower_{5/10}/non_padded_namespaces.txt`:
+-   `allen_vocab_lower_{5/10}/tokens.txt`:
+-   `fira-22.tuples.tsv`:
+-   `msmarco_qrels.txt`:
+-   `msmarco_queries.test.tsv`:
+-   `msmarco_queries.validation.tsv`:
+-   `msmarco_tuples.test.tsv`:
+-   `msmarco_tuples.validation.tsv`:
+-   `triples.train.tsv`:
+
 <br><br>
 
 # Part 3 - Extractive QA
