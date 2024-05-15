@@ -83,6 +83,18 @@ _meta-judgement:_
 
 -   TODO
 
+a little sanity check:
+
+```bash
+noodle-retrieval git:main
+❯ cat output/fira-22.qrels.tsv | wc -l
+   24189
+
+noodle-retrieval git:main
+❯ cat data-merged/data-merged/air-exercise-2/Part-1/fira-22.baseline-qrels.tsv | wc -l
+   24189
+```
+
 <br><br>
 
 # Part 2 - Neural Re-Ranking
