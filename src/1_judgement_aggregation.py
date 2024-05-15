@@ -11,8 +11,8 @@ write the aggregated judgements to a file.
 """
 
 
-base_in = Path.cwd() / "data-merged" / "data-merged" / "air-exercise-2" / "Part-1"
-base_in_prev = Path.cwd() / "data-merged" / "data-merged"  # output of previous script
+base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-1"
+base_in_prev = Path.cwd() / "data-merged" / "data"  # output of previous script
 base_out = Path.cwd() / "output"
 
 docs = pd.read_csv(base_in_prev / "fira-22.documents.embeddings.tsv", sep="\t")

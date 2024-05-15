@@ -9,8 +9,8 @@ from typing import List
 generate embeddings of documents and queries for judgement aggregation
 """
 
-base_in = Path.cwd() / "data-merged" / "data-merged" / "air-exercise-2" / "Part-1"
-base_out = Path.cwd() / "data-merged" / "data-merged"
+base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-1"
+base_out = Path.cwd() / "data-merged" / "data"
 
 docs: pd.DataFrame = pd.read_csv(base_in / "fira-22.documents.tsv", sep="\t")
 queries: pd.DataFrame = pd.read_csv(base_in / "fira-22.queries.tsv", sep="\t")
