@@ -111,7 +111,7 @@ $ cat data-merged/data-merged/air-exercise-2/Part-1/fira-22.baseline-qrels.tsv |
    24189
 ```
 
-We want to pick 5 random queries and manually decide how well we combined the existing relevance grades.
+Next we pick 5 random examples and manually decide how well we combined the existing relevance grades.
 
 <br><br>
 
