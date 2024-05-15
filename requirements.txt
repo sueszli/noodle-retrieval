@@ -1,5 +1,4 @@
-# ------------------------------------------- project dependencies
-
+# project dependencies
 allennlp==1.2.2
 blingfire==0.1.7
 PyYAML==5.4
@@ -10,6 +9,6 @@ torch==1.6.0
 
 overrides
 
-# ------------------------------------------- convenience
+# convenience
 numpy
 pandas

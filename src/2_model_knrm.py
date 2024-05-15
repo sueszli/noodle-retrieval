@@ -48,9 +48,8 @@ class KNRM(nn.Module):
 
         return output
 
-
     # def forward(self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor,
-    #             query_pad_oov_mask: torch.Tensor, document_pad_oov_mask: torch.Tensor, 
+    #             query_pad_oov_mask: torch.Tensor, document_pad_oov_mask: torch.Tensor,
     #             output_secondary_output: bool = False) -> torch.Tensor:
     #     # pylint: disable=arguments-differ
 
@@ -75,7 +74,7 @@ class KNRM(nn.Module):
     #     #
     #     # first run through kernel, then sum on doc dim then sum on query dim
     #     # -------------------------------------------------------
-        
+
     #     raw_kernel_results = torch.exp(- torch.pow(cosine_matrix_extradim - self.mu, 2) / (2 * torch.pow(self.sigma, 2)))
     #     kernel_results_masked = raw_kernel_results * query_by_doc_mask_view
 
@@ -83,7 +82,7 @@ class KNRM(nn.Module):
     #     log_per_kernel_query = torch.log(torch.clamp(per_kernel_query, min=1e-10)) * 0.01
     #     log_per_kernel_query_masked = log_per_kernel_query * query_pad_oov_mask.unsqueeze(-1) # make sure we mask out padding values
 
-    #     per_kernel = torch.sum(log_per_kernel_query_masked, 1) 
+    #     per_kernel = torch.sum(log_per_kernel_query_masked, 1)
 
     #     ##
     #     ## "Learning to rank" layer - connects kernels with learned weights
@@ -106,7 +105,6 @@ class KNRM(nn.Module):
 
     # def get_param_secondary(self):
     #     return {"kernel_weight":self.dense.weight}
-
 
     def kernel_mus(self, n_kernels: int):
         """

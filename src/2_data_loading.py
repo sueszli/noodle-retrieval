@@ -17,6 +17,10 @@ from allennlp.data.tokenizers import Tokenizer
 from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
 from allennlp.data.tokenizers.token import Token
 
+
+print("hello")
+
+
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
