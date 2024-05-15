@@ -85,8 +85,8 @@ if __name__ == "__main__":
             sim_vote = 3 if sim >= 0.75 else 2 if sim >= 0.5 else 1 if sim >= 0.25 else 0
             votes = np.append(votes, sim_vote)
 
-            agg_vote = int(np.median(votes))
-            # agg_vote = int(np.mean(votes))
+            # agg_vote = int(np.median(votes))
+            agg_vote = np.round(np.mean(votes)).astype(int)
             # agg_vote = int(Counter(votes).most_common(1)[0][0])  # majority vote
             assert agg_vote in [0, 1, 2, 3]
 

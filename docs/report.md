@@ -87,15 +87,14 @@ There are multiple ways to do this. Here are some ideas:
 
 We decided to go with the content based approach.
 
-**The hypothesis** / assumption is that we can use the embeddings to enhance the baseline solution.
+**The hypothesis** / assumption is that we can use the cosine similarity of the query and document embeddings to add an additional relevance grade to the existing ones. This way we can increase the quality of the baseline solution in cases where there are not enough expert votes to make a decision. But the similarity vote should ideally vanish if there are enough expert votes to make a decision.
 
 **The algorithm** is as follows:
 
 -   Load the data, generate embeddings for the documents and queries and add them to the data.
--   Remove all queries that never occur in the judgement data. This way we can turn the (query, document) pairs into our unique identifier.
+-   Remove all queries that never occur in the judgement data. This way we can turn the (query, document) pairs into our unique identifier. → This takes several hours in practice.
 -   For each unique (query, document) pair, in addition to the existing relevance grades, add a synthetic relevance grade based on the cosine similarity of the query and document embeddings.
--   Aggregate the relevance grades for each unique (query, document) pair by taking the median of all relevance grades (including the synthetic one).
--   Save the results in the format of the baseline solution.
+-   Aggregate the relevance grades for each unique (query, document) pair by taking the mean of all relevance grades (including the synthetic one). → We looked at a bunch of different weighting schemes and aggregation methods (mean, mode, median) and found that the mean works best as the effect of the synthetic vote becomes more visible.
 
 ## Meta judgement
 
@@ -111,7 +110,61 @@ $ cat data-merged/data-merged/air-exercise-2/Part-1/fira-22.baseline-qrels.tsv |
    24189
 ```
 
-Next we pick 5 random examples and manually decide how well we combined the existing relevance grades.
+We pick 5 random examples and manually decide how well we combined the existing relevance grades.
+
+```
+- query id: trip_1337, doc id: trip_4728579
+- expert votes: [2 2 2] (mean: 2.00, median: 2, mode: 2)
+- similarity vote: 2
+- aggregated vote: 2
+```
+
+In the case above both the experts and the similarity vote agree on the relevance grade. Nothing to see here.
+
+```
+- query id: trip_443528, doc id: trip_9943688
+- expert votes: [0 0 0] (mean: 0.00, median: 0, mode: 0)
+- similarity vote: 2
+- aggregated vote: 0
+
+- query id: rob_qq_FR940811-1-00004, doc id: rob_FR940811-1-00004
+- expert votes: [0 0 0] (mean: 0.00, median: 0, mode: 0)
+- similarity vote: 2
+- aggregated vote: 0
+```
+
+In the 2 cases above the experts agree the similarity vote does not. But the synthetic vote didn't influence the result as we have 3 voters agreeing on the relevance grade.
+
+```
+- query id: rob_q_FT933-11533, doc id: rob_FT924-4715
+- expert votes: [0 2 1] (mean: 1.00, median: 1, mode: 0)
+- similarity vote: 1
+- aggregated vote: 1
+
+- query id: trip_57861, doc id: trip_5571694
+- expert votes: [3 1 2] (mean: 2.00, median: 2, mode: 3)
+- similarity vote: 2
+- aggregated vote: 2
+```
+
+In the 2 cases above the similarity vote didn't agree with the expert votes but did not influence the result either.
+
+```
+- query id: rob_qq_FR940318-0-00056, doc id: rob_FR940106-0-00031
+- expert votes: [1 0 0] (mean: 0.33, median: 0, mode: 0)
+- similarity vote: 3
+- aggregated vote: 1
+```
+
+This final case is particularly interesting as the similarity vote is very different from the expert votes and moved the mean up from 0.33 to rounded 1, effectively changing the relevance grade from 0 to 1.
+
+## Conclusion
+
+In conclusion while our algorithm did not really differ significantly from the baseline solution using the mode, it did change the relevance grade in some _very rare_ cases where the expert votes were not unanimous and slightly nudged the relevance grade in a more favorable direction.
+
+But given how computationally expensive it is to generate embeddings for all documents and queries, we would not recommend this approach in a real-world scenario given the marginal improvement in quality.
+
+Just using the mode of the expert votes would be more efficient and almost as effective.
 
 <br><br>
 
@@ -131,3 +184,7 @@ pull request for reproducibility through docker: https://github.com/tuwien-infor
 
 -   custom dockerfile for reproducability of the unmaintained AllenNLP library
 -   little hack that chunks data and allows us to push multiple gigabytes of data to github without having to pay for LFS cloud storage: https://github.com/sueszli/github-lfs-bypass/blob/main/upload.sh
+
+```
+
+```
