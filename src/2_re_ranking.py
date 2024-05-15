@@ -330,25 +330,23 @@ assert Path(config["train_data"]).exists()
 assert Path(config["validation_data"]).exists()
 assert Path(config["test_data"]).exists()
 
-#
-# data loading
-#
+# get words that occur at least 10 times
+vocab = Vocabulary.from_files(config["vocab_directory"])
 
-# vocab = Vocabulary.from_files(config["vocab_directory"])
-# tokens_embedder = Embedding(vocab=vocab, pretrained_file=config["pre_trained_embedding"], embedding_dim=300, trainable=True, padding_index=0)
-# word_embedder = BasicTextFieldEmbedder({"tokens": tokens_embedder})
+# map words to (pre-trained) embeddings
+tokens_embedder = Embedding(vocab=vocab, pretrained_file=str(config["pre_trained_embedding"]), embedding_dim=300, trainable=True, padding_index=0)
+word_embedder = BasicTextFieldEmbedder({"tokens": tokens_embedder})
 
-# # feel free to change default params
-# if config["model"] == "knrm":
-#     model = KNRM(word_embedder, n_kernels=11)
-# elif config["model"] == "tk":
-#     model = TK(word_embedder, n_kernels=11, n_layers=2, n_tf_dim=300, n_tf_heads=10)
+# define model, optimizer
+if config["model"] == "knrm":
+    model = KNRM(word_embedder, n_kernels=11)
+elif config["model"] == "tk":
+    model = TK(word_embedder, n_kernels=11, n_layers=2, n_tf_dim=300, n_tf_heads=10)
 
-# optimizer, loss
-# optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-# print("Model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
-# print("Network:", model)
+print("Model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
+print("Network:", model)
 
 #
 # train
@@ -381,10 +379,3 @@ assert Path(config["test_data"]).exists()
 #     # todo evaluation
 #     pass
 
-
-if __name__ == "__main__":
-
-    # words that occur at least 10 times
-    vocab = Vocabulary.from_files(config["vocab_directory"])
-
-    # tokens_embedder = Embedding(vocab=vocab, pretrained_file=config["pre_trained_embedding"], embedding_dim=300, trainable=True, padding_index=0)
