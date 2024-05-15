@@ -11,16 +11,9 @@ RUN pip install transformers==3.5.1
 RUN pip install --find-links https://download.pytorch.org/whl/torch_stable.html torch==1.6.0
 
 RUN pip install overrides
-RUN pip install transformers
 
 # convenience
 RUN apt-get install -y git
 RUN pip install numpy pandas matplotlib seaborn
-
-# jupyter server
-# RUN pip install jupyter jupyterlab jupyter_contrib_nbextensions
-# ENV JUPYTER_ENABLE_LAB=yes
-# CMD ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--allow-root", "--no-browser", "--ServerApp.token=''", "--ServerApp.password=''", "--ServerApp.allow_origin='*'", "--ServerApp.disable_check_xsrf=True", "--ServerApp.allow_root=True", "--ServerApp.open_browser=False", "--ServerApp.disable_check_xsrf=True", "--ServerApp.disable_check_xsrf=True"]
-# EXPOSE 8888
 
 CMD ["tail", "-f", "/dev/null"]

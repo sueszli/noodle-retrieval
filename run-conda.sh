@@ -35,13 +35,12 @@ conda config --set auto_activate_base false # disable auto-activation
 conda config --env --set subdir osx-64 # emulate x86_64
 
 # ------------------------------------------- start
-conda create --yes --name noodle-retrieval
+conda activate base
+
+conda create --yes --name noodle-retrieval python=3.6.12 anaconda
 conda activate noodle-retrieval
 
-conda install --yes --channel conda-forge python=3.9
-
-# convenience
-conda install --yes --channel conda-forge numpy pandas matplotlib seaborn
+pip install -r requirements.txt
 
 # ------------------------------------------- stop
 conda deactivate
