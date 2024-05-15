@@ -26,7 +26,7 @@ import logging
 
 
 prepare_environment(Params({}))  # seed
-logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
+logger = logging.getLogger(__name__)
 
 
 class BlingFireTokenizer:
@@ -36,12 +36,7 @@ class BlingFireTokenizer:
 
 class IrTripleDatasetReader(DatasetReader):
     """
-    Read a tsv file containing triple sequences, and create a dataset suitable for a neural IR model, or any model with a matching API.
-    Expected format for each input line: <query_sequence_string>\t<pos_doc_sequence_string>\t<neg_doc_sequence_string>
-    The output of ``read`` is a list of ``Instance`` s with the fields:
-        query_tokens: ``TextField`` and
-        doc_pos_tokens: ``TextField`` and
-        doc_neg_tokens: ``TextField``
+    convert `triples.train.tsv` into 3 tokenized `TextField`s for query, positive-doc, negative-doc.
     """
 
     def __init__(
@@ -71,8 +66,7 @@ class IrTripleDatasetReader(DatasetReader):
                 yield self.text_to_instance(query_sequence, doc_pos_sequence, doc_neg_sequence)
 
     @overrides
-    def text_to_instance(self, query_sequence: str, doc_pos_sequence: str, doc_neg_sequence: str) -> Instance:  # type: ignore
-        # pylint: disable=arguments-differ
+    def text_to_instance(self, query_sequence: str, doc_pos_sequence: str, doc_neg_sequence: str) -> Instance:
         query_tokenized = self._tokenizer.tokenize(query_sequence)
         if self.max_query_length > -1:
             query_tokenized = query_tokenized[: self.max_query_length]
@@ -133,9 +127,7 @@ class IrLabeledTupleDatasetReader(DatasetReader):
                 yield self.text_to_instance(query_id, doc_id, query_sequence, doc_sequence)
 
     @overrides
-    def text_to_instance(self, query_id: str, doc_id: str, query_sequence: str, doc_sequence: str) -> Instance:  # type: ignore
-        # pylint: disable=arguments-differ
-
+    def text_to_instance(self, query_id: str, doc_id: str, query_sequence: str, doc_sequence: str) -> Instance:
         query_id_field = MetadataField(query_id)
         doc_id_field = MetadataField(doc_id)
 
@@ -178,8 +170,6 @@ class KNRM(nn.Module):
         # todo
 
     def forward(self, query: Dict[str, torch.Tensor], document: Dict[str, torch.Tensor]) -> torch.Tensor:
-        # pylint: disable=arguments-differ
-
         #
         # prepare embedding tensors & paddings masks
         # -------------------------------------------------------
@@ -252,8 +242,6 @@ class TK(nn.Module):
         # todo
 
     def forward(self, query: Dict[str, torch.Tensor], document: Dict[str, torch.Tensor]) -> torch.Tensor:
-        # pylint: disable=arguments-differ
-
         #
         # prepare embedding tensors & paddings masks
         # -------------------------------------------------------
