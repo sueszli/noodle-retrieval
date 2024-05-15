@@ -1,10 +1,8 @@
 import pandas as pd
-from pandas.core.groupby.generic import DataFrameGroupBy
 import numpy as np
 import torch
 from torch.nn.functional import cosine_similarity
 from pathlib import Path
-import os
 
 
 base_in = Path.cwd() / "data-merged" / "data-merged" / "air-exercise-2" / "Part-1"
@@ -51,14 +49,7 @@ def preprocess_judgements(judgements: pd.DataFrame) -> pd.DataFrame:
     judgements = judgements[["relevanceLevel", "queryId", "documentId"]]
 
     # map votes to integers
-    judgements["relevanceLevel"] = judgements["relevanceLevel"].map(
-        {
-            "0_NOT_RELEVANT": 0,
-            "1_TOPIC_RELEVANT_DOES_NOT_ANSWER": 1,
-            "2_GOOD_ANSWER": 2,
-            "3_PERFECT_ANSWER": 3,
-        }
-    )
+    judgements["relevanceLevel"] = judgements["relevanceLevel"].map({"0_NOT_RELEVANT": 0, "1_TOPIC_RELEVANT_DOES_NOT_ANSWER": 1, "2_GOOD_ANSWER": 2, "3_PERFECT_ANSWER": 3})
     return judgements
 
 
