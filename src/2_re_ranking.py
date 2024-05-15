@@ -29,7 +29,7 @@ prepare_environment(Params({}))  # seed
 logger = logging.getLogger(__name__)
 
 
-# -------------------------------------------------------------------------------------------------------------- file reader, tokenizer
+#region file-reader
 
 
 class BlingFireTokenizer:
@@ -150,7 +150,10 @@ class IrLabeledTupleDatasetReader(DatasetReader):
         return Instance({"query_id": query_id_field, "doc_id": doc_id_field, "query_tokens": query_field, "doc_tokens": doc_field})
 
 
-# -------------------------------------------------------------------------------------------------------------- models
+#endregion file-reader
+
+
+#region models
 
 
 class KNRM(nn.Module):
@@ -297,7 +300,7 @@ class TK(nn.Module):
         return l_sigma
 
 
-# -------------------------------------------------------------------------------------------------------------- logic
+#endregion models
 
 
 base = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-2"
