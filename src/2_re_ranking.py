@@ -317,7 +317,7 @@ class TK(nn.Module):
 base = Path.cwd() / "data-merged" / "data-merged" / "air-exercise-2" / "Part-2"
 config = {
     "vocab_directory": base / "allen_vocab_lower_10",
-    "pre_trained_embedding": base / "glove.42B.300d.txt",
+    "pre_trained_embedding": "glove.42B.300d.txt",
     "model": "knrm",
     "train_data": base / "triples.train.tsv",
     "validation_data": base / "tuples.validation.tsv",
@@ -375,8 +375,11 @@ config = {
 #     # todo evaluation
 #     pass
 
-if __name__ == "__main__":
-    print("hello")
 
+if __name__ == "__main__":
+
+    # words that occur at least 10 times
     vocab = Vocabulary.from_files(config["vocab_directory"])
-    print("vocab", vocab)
+
+    #
+    tokens_embedder = Embedding(vocab=vocab, pretrained_file=config["pre_trained_embedding"], embedding_dim=300, trainable=True, padding_index=0)
