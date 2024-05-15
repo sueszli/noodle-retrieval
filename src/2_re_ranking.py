@@ -314,15 +314,21 @@ class TK(nn.Module):
 
 # --------------------------------------------------------------------------------------------------------------
 
-base = Path.cwd() / "data-merged" / "data-merged" / "air-exercise-2" / "Part-2"
+base = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-2"
+
 config = {
     "vocab_directory": base / "allen_vocab_lower_10",
-    "pre_trained_embedding": "glove.42B.300d.txt",
+    "pre_trained_embedding": base / "glove.42B.300d.txt",
     "model": "knrm",
     "train_data": base / "triples.train.tsv",
-    "validation_data": base / "tuples.validation.tsv",
-    "test_data": base / "tuples.test.tsv",
+    "validation_data": base / "msmarco_tuples.validation.tsv",
+    "test_data": base / "msmarco_tuples.test.tsv",
 }
+assert Path(config["vocab_directory"]).exists()
+assert Path(config["pre_trained_embedding"]).exists()
+assert Path(config["train_data"]).exists()
+assert Path(config["validation_data"]).exists()
+assert Path(config["test_data"]).exists()
 
 #
 # data loading
@@ -381,5 +387,4 @@ if __name__ == "__main__":
     # words that occur at least 10 times
     vocab = Vocabulary.from_files(config["vocab_directory"])
 
-    #
-    tokens_embedder = Embedding(vocab=vocab, pretrained_file=config["pre_trained_embedding"], embedding_dim=300, trainable=True, padding_index=0)
+    # tokens_embedder = Embedding(vocab=vocab, pretrained_file=config["pre_trained_embedding"], embedding_dim=300, trainable=True, padding_index=0)

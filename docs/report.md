@@ -206,11 +206,11 @@ Neural re-ranking is a technique to improve the quality of search results by usi
 
 -   `glove.42B.300d.txt`: GloVe embeddings
 
-        Pre-trained glove embedding from: https://nlp.stanford.edu/projects/glove/
+    Pre-trained glove embedding from: https://nlp.stanford.edu/projects/glove/
 
-        Common Crawl (42B tokens, 1.9M vocab, uncased, 300d vectors, 1.75 GB download)
+    Common Crawl (42B tokens, 1.9M vocab, uncased, 300d vectors, 1.75 GB download)
 
-    <br><br>
+<br><br>
 
 # Part 3 - Extractive QA
 
