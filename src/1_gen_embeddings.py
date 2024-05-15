@@ -6,8 +6,8 @@ import torch
 from typing import List
 
 
-base_in = Path.cwd() / "data-merged" / "air-exercise-2" / "Part-1"
-base_out = Path.cwd() / "data-merged"
+base_in = Path.cwd() / "data-merged" / "data-merged" / "air-exercise-2" / "Part-1"
+base_out = Path.cwd() / "data-merged" / "data-merged"
 
 docs: pd.DataFrame = pd.read_csv(base_in / "fira-22.documents.tsv", sep="\t")
 queries: pd.DataFrame = pd.read_csv(base_in / "fira-22.queries.tsv", sep="\t")

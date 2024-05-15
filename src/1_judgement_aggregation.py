@@ -4,13 +4,15 @@ import numpy as np
 import torch
 from torch.nn.functional import cosine_similarity
 from pathlib import Path
+import os
 
 
-base_in = Path.cwd() / "data-merged" / "air-exercise-2" / "Part-1"
-base_out = Path.cwd() / "data-merged"  # output of previous script
+base_in = Path.cwd() / "data-merged" / "data-merged" / "air-exercise-2" / "Part-1"
+base_in_prev = Path.cwd() / "data-merged" / "data-merged"  # output of previous script
+base_out = Path.cwd() / "output"
 
-docs = pd.read_csv(base_out / "fira-22.documents.embeddings.tsv", sep="\t")
-queries = pd.read_csv(base_out / "fira-22.queries.embeddings.tsv", sep="\t")
+docs = pd.read_csv(base_in_prev / "fira-22.documents.embeddings.tsv", sep="\t")
+queries = pd.read_csv(base_in_prev / "fira-22.queries.embeddings.tsv", sep="\t")
 judgements: pd.DataFrame = pd.read_csv(base_in / "fira-22.judgements-anonymized.tsv", sep="\t")
 
 
@@ -75,21 +77,33 @@ docs = preprocess_docs(docs)  # "doc_id", "doc_embedding"
 queries = preprocess_queries(queries)  # "query_id", "query_embedding"
 judgements = preprocess_judgements(judgements)  # "relevanceLevel", "queryId", "documentId"
 
-for _, q in queries.iterrows():
-    q_id = q["query_id"]
-    d_ids = judgements[judgements["queryId"] == q_id]["documentId"].unique()
+if __name__ == "__main__":
+    f = open(base_out / "fira-22.qrels.tsv", "w")
+    total = len(queries)
+    c = 0
 
-    for doc_id in d_ids:
-        votes = judgements[judgements["documentId"] == doc_id]["relevanceLevel"].values
-        sim = get_cos_similarity(q_id, doc_id)
+    for _, q in queries.iterrows():
+        q_id = q["query_id"]
+        d_ids = judgements[judgements["queryId"] == q_id]["documentId"].unique()
 
-        # our additional vote
-        sim_vote = 3 if sim >= 0.75 else 2 if sim >= 0.5 else 1 if sim >= 0.25 else 0
-        votes = np.append(votes, sim_vote)
+        for doc_id in d_ids:
+            votes = judgements[judgements["documentId"] == doc_id]["relevanceLevel"].values
+            sim = get_cos_similarity(q_id, doc_id)
 
-        agg_vote = int(np.median(votes))
-        # agg_vote = int(np.mean(votes))
-        # agg_vote = int(Counter(votes).most_common(1)[0][0])  # majority vote
-        assert agg_vote in [0, 1, 2, 3]
+            # our additional vote
+            sim_vote = 3 if sim >= 0.75 else 2 if sim >= 0.5 else 1 if sim >= 0.25 else 0
+            votes = np.append(votes, sim_vote)
 
-        print(f"({q_id}, {doc_id}) with sim_vote: {agg_vote}")
+            agg_vote = int(np.median(votes))
+            # agg_vote = int(np.mean(votes))
+            # agg_vote = int(Counter(votes).most_common(1)[0][0])  # majority vote
+            assert agg_vote in [0, 1, 2, 3]
+
+            f.write(f"{q_id} Q0 {doc_id} {agg_vote}\n")
+            f.flush()
+
+        c += 1
+        progress = c / total * 100
+        print(f"\rprogress: {progress:.2f}%", end="\r")
+
+    f.close()
