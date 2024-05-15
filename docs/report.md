@@ -170,7 +170,7 @@ Just using the mode of the expert votes would be more efficient and almost as ef
 
 # Part 2 - Neural Re-Ranking
 
-knrm model, see: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/drmm.py#L37
+Source code for KNRM model: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
 
 <br><br>
 
