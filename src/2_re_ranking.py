@@ -161,6 +161,9 @@ class IrLabeledTupleDatasetReader(DatasetReader):
         return Instance({"query_id": query_id_field, "doc_id": doc_id_field, "query_tokens": query_field, "doc_tokens": doc_field})
 
 
+# --------------------------------------------------------------------------------------------------------------
+
+
 class KNRM(nn.Module):
     """
     Paper: End-to-End Neural Ad-hoc Ranking with Kernel Pooling, Xiong et al., SIGIR'17
@@ -341,9 +344,9 @@ config = {
 # print("Model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 # print("Network:", model)
 
-# #
-# # train
-# #
+#
+# train
+#
 
 # _triple_reader = IrTripleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
 # _triple_reader = _triple_reader.read(config["train_data"])
@@ -357,10 +360,10 @@ config = {
 #         pass
 
 
-# #
-# # eval (duplicate for validation inside train loop - but rename "loader", since
-# # otherwise it will overwrite the original train iterator, which is instantiated outside the loop)
-# #
+#
+# eval (duplicate for validation inside train loop - but rename "loader", since
+# otherwise it will overwrite the original train iterator, which is instantiated outside the loop)
+#
 
 # _tuple_reader = IrLabeledTupleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
 # _tuple_reader = _tuple_reader.read(config["test_data"])
@@ -371,3 +374,9 @@ config = {
 #     # todo test loop
 #     # todo evaluation
 #     pass
+
+if __name__ == "__main__":
+    print("hello")
+
+    vocab = Vocabulary.from_files(config["vocab_directory"])
+    print("vocab", vocab)

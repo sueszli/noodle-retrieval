@@ -170,21 +170,29 @@ Just using the mode of the expert votes would be more efficient and almost as ef
 
 # Part 2 - Neural Re-Ranking
 
-Data loader based on: https://github.com/allenai/allennlp/blob/master/allennlp/data/dataset_readers/seq2seq.py
+> Data loader based on: https://github.com/allenai/allennlp/blob/master/allennlp/data/dataset_readers/seq2seq.py
+>
+> KNRM model based on: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
 
-KNRM model based on: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
+Neural re-ranking is a technique to improve the quality of search results by using a neural network to re-rank the results of a search engine.
 
 ## Data description
 
--   `allen_vocab_lower_{5/10}/non_padded_namespaces.txt`:
--   `allen_vocab_lower_{5/10}/tokens.txt`:
--   `fira-22.tuples.tsv`:
--   `msmarco_qrels.txt`:
--   `msmarco_queries.test.tsv`:
--   `msmarco_queries.validation.tsv`:
--   `msmarco_tuples.test.tsv`:
--   `msmarco_tuples.validation.tsv`:
--   `triples.train.tsv`:
+-   `allen_vocab_lower_{5/10}`: directory containing the vocabulary files for the AllenNLP model.
+
+    Used as argument for `from allennlp.data.vocabulary import Vocabulary`.
+
+    see: https://docs.allennlp.org/main/api/data/vocabulary/
+
+-   `fira-22.tuples.tsv`, `msmarco_tuples.validation.tsv`, `msmarco_tuples.test.tsv`: ???
+
+-   `msmarco_qrels.txt`: ???
+
+-   `msmarco_queries.validation.tsv`, `msmarco_queries.test.tsv`: query text data.
+
+    Format: `query_id, query_text` (no header)
+
+-   `triples.train.tsv`: ???
 
 <br><br>
 
@@ -194,11 +202,7 @@ KNRM model based on: https://github.com/sebastian-hofstaetter/matchmaker/blob/21
 
 # Bonus Points
 
-pull request for reproducibility through docker: https://github.com/tuwien-information-retrieval/air-24-template-public/pull/1/commits
+Pull request for reproducibility: https://github.com/tuwien-information-retrieval/air-24-template-public/pull/1/commits
 
--   custom dockerfile for reproducability of the unmaintained AllenNLP library
--   little hack that chunks data and allows us to push multiple gigabytes of data to github without having to pay for LFS cloud storage: https://github.com/sueszli/github-lfs-bypass/blob/main/upload.sh
-
-```
-
-```
+-   The AllenNLP library is unmaintained, has many deprecated dependencies that are not compatible with the latest versions of other libraries and relies on python@3.6< which has critical security vulnerabilities and can't be installed on arm64 architectures. We provide 2 containerized solutions to this problem.
+-   Little hack that chunks data and allows us to push multiple gigabytes of data to github without having to pay for LFS cloud storage: https://github.com/sueszli/github-lfs-bypass/blob/main/upload.sh
