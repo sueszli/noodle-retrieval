@@ -11,11 +11,15 @@ data:
 
     No header.
 
+    Example: `810210	1029662	3		wide variety of conditions, such as hemorrhoids, diverticula, inflammatory bowel disease, rectal prolapse, colorectal cancer, rectal abscesses, intestinal infections, peptic ulcer, intestinal polyps, constipation or anal fissures`
+
     Format: `queryid, documentid, relevance-grade, text-selection (multiple answers possible, split with tab)`
 
 -   `msmarco-fira-21.qrels.qa-tuples.tsv`:
 
     No header.
+
+    Example: `480536	4049888	2	price of bath fitter for a tub	My parents needed to replace their tub in the 2nd bathroom of their manufactured home. They got a quote from Bath Fitter for $4800.00 less a senior citizen's discount of $500.00. So the bid was for $4300.00. My parents are retired and don't have a whole lot of money so they couldn't use Bath Fitter.		My parents needed to replace their tub in the 2nd bathroom of their manufactured home. They got a quote from Bath Fitter for $4800.00 less a senior citizen's discount of $500.00. So the bid was for $4300.00. My parents are retired and don't have a whole lot of money so they couldn't use Bath Fitter`
 
     Format: `queryid, documentid, relevance-grade, query-text, document-text, text-selection (multiple answers possible, split with tab)`
 
@@ -23,7 +27,7 @@ data:
 
     No header.
 
-    Example: `135386 0 100163 3`
+    Example: `1007473 0 7251748 3`
 
     Format: `queryid, 0, documentid, relevance-grade`
 
@@ -37,50 +41,113 @@ import torch
 
 
 base = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-3"
-answers = pd.read_csv(base / "msmarco-fira-21.qrels.qa-answers.tsv", sep="\t", header=None, names=["queryid", "documentid", "relevance-grade", "text-selection"], converters={"text-selection": lambda x: x.split("\t")})
-tuples: pd.DataFrame = pd.read_csv(base / "msmarco-fira-21.qrels.qa-tuples.tsv", sep="\t", header=None, names=["queryid", "documentid", "relevance-grade", "query-text", "document-text", "text-selection"], converters={"text-selection": lambda x: x.split("\t")})
-retrieval: pd.DataFrame = pd.read_csv(base / "msmarco-fira-21.qrels.retrieval.tsv", sep="\t", header=None, names=["queryid", "Q0", "documentid", "relevance-grade"])
+answers_path = base / "msmarco-fira-21.qrels.qa-answers.tsv"
+tuples_path  = base / "msmarco-fira-21.qrels.qa-tuples.tsv"
+retrieval_path = base / "msmarco-fira-21.qrels.retrieval.tsv"
+
+
+"""
+manual pre-processing of the data
+"""
+
+answers = pd.read_csv(answers_path, sep="\t", error_bad_lines=False, quoting=csv.QUOTE_NONE)
+for row in answers.iterrows():
+    print(row)
+    # print(queryid, documentid, relevance_grade, text_selection, "\n\n\n")
+
+    
+
 
 # tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-distilled-squad")
 # model = AutoModelForQuestionAnswering.from_pretrained("distilbert-base-uncased-distilled-squad")
 
 
-# def tokenize_inputs(query: str, passage: str):
+# def tokenize_inputs(query_text, passage_text):
 #     inputs = tokenizer.encode_plus(
-#         query,
-#         passage,
+#         query_text,
+#         passage_text,
 #         add_special_tokens=True,
-#         max_length=512,
-#         padding='max_length',
-#         truncation=True,
 #         return_tensors="pt",
+#         max_length=512,
+#         truncation=True,
+#         padding='max_length'
 #     )
-#     return inputs["input_ids"], inputs["attention_mask"]
+#     return {
+#         "input_ids": inputs["input_ids"].flatten(),
+#         "attention_mask": inputs["attention_mask"].flatten()
+#     }
 
 
-# def predict_answer(input_ids, attention_mask):
-#     outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+# def run_inference(tokenized_inputs):
+#     outputs = model(**tokenized_inputs)
 #     scores = outputs.start_logits + outputs.end_logits
 #     all_answers = []
-#     for score in scores[0]:
-#         answer_start = torch.argmax(score).item()
-#         answer_end = torch.argmax(torch.cat((score[:answer_start], score[answer_start+1:]))) + answer_start + 1
-#         answer = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(input_ids[0][answer_start:answer_end]))
+#     for i in range(len(scores)):
+#         answer_start = torch.argmax(outputs.start_logits[i])
+#         answer_end = torch.argmax(outputs.end_logits[i]) + 1
+#         answer = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(inputs["input_ids"][i][answer_start:answer_end]))
 #         all_answers.append(answer)
 #     return all_answers
 
-# # queries = [...]  # List of queries
-# queries = retrieval["queryid"].unique()
-# # passages = [...]  # Corresponding list of passages
-# passages = retrieval["documentid"].unique()
+# results_df = pd.DataFrame(columns=["queryid", "documentid", "relevance-grade", "predicted_answer"])
 
-# predictions = []
-# for query, passage in zip(queries, passages):
-#     input_ids, attention_mask = tokenize_inputs(query, passage)
-#     answers = predict_answer(input_ids, attention_mask)
-#     predictions.append({"query": query, "passage": passage, "answers": answers})
 
-#     print(f"Query: {query}")
-#     print(f"Passage: {passage}")
-#     print(f"Answers: {answers}")
-#     print()
+# for index, row in tuples.iterrows():
+
+#     query_text = row['query-text']
+#     document_text = row['document-text']
+#     tokenized_inputs = tokenize_inputs(query_text, document_text)
+#     predicted_answers = run_inference(tokenized_inputs)
+#     # Assuming the first prediction is the correct one for simplicity
+#     results_df = results_df.append({"queryid": row['queryid'], "documentid": row['documentid'], "relevance-grade": row['relevance-grade'], "predicted_answer": predicted_answers[0]}, ignore_index=True)
+
+#     print(f"Query: {query_text}")
+#     print(f"Document: {document_text}")
+#     print(f"Predicted Answer: {predicted_answers[0]}")
+#     print("---------------------------------------------------")
+
+
+# # def tokenize_inputs(query_text, passage_text):
+# #     inputs = tokenizer.encode_plus(
+# #         query_text,
+# #         passage_text,
+# #         add_special_tokens=True,
+# #         return_tensors="pt",
+# #         max_length=512,
+# #         truncation=True,
+# #         padding='max_length'
+# #     )
+# #     return {
+# #         "input_ids": inputs["input_ids"].flatten(),
+# #         "attention_mask": inputs["attention_mask"].flatten()
+# #     }
+
+
+# # def run_inference(tokenized_inputs):
+# #     outputs = model(**tokenized_inputs)
+# #     scores = outputs.start_logits + outputs.end_logits
+# #     all_answers = []
+# #     for i in range(len(scores)):
+# #         answer_start = torch.argmax(outputs.start_logits[i])
+# #         answer_end = torch.argmax(outputs.end_logits[i]) + 1
+# #         answer = tokenizer.convert_tokens_to_string(tokenizer.convert_ids_to_tokens(inputs["input_ids"][i][answer_start:answer_end]))
+# #         all_answers.append(answer)
+# #     return all_answers
+
+# # results_df = pd.DataFrame(columns=["queryid", "documentid", "relevance-grade", "predicted_answer"])
+
+# # for index, row in tuples.iterrows():
+# #     query_text = row['query-text']
+# #     document_text = row['document-text']
+# #     tokenized_inputs = tokenize_inputs(query_text, document_text)
+# #     predicted_answers = run_inference(tokenized_inputs)
+# #     # Assuming the first prediction is the correct one for simplicity
+# #     results_df = results_df.append({"queryid": row['queryid'], "documentid": row['documentid'], "relevance-grade": row['relevance-grade'], "predicted_answer": predicted_answers[0]}, ignore_index=True)
+
+# #     print(f"Query: {query_text}")
+# #     print(f"Document: {document_text}")
+# #     print(f"Predicted Answer: {predicted_answers[0]}")
+# #     print("---------------------------------------------------")
+
+# # # Here, you would call the evaluation functions from core_metrics.py to evaluate the model's performance
+# # # This step requires the implementation of the evaluation logic in core_metrics.py, which is not provided in the initial context.
