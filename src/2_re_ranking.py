@@ -164,7 +164,7 @@ class KNRM(nn.Module):
     """
     Paper: End-to-End Neural Ad-hoc Ranking with Kernel Pooling, Xiong et al., SIGIR'17
 
-    see: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
+    taken from: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
     """
 
     def __init__(self, word_embeddings: TextFieldEmbedder, n_kernels: int):
@@ -173,22 +173,20 @@ class KNRM(nn.Module):
 
         self.word_embeddings = word_embeddings
 
-        # static list of mu and sigma values for the gaussian convolutional kernels
+        # list of mu and sigma values for the gaussian convolutional kernels
         mu = torch.FloatTensor(self.kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
         sigma = torch.FloatTensor(self.kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
-        self.register_buffer("mu", mu) # prevents updates
+        self.register_buffer("mu", mu) # don't learn
         self.register_buffer("sigma", sigma)
 
-        # this does not really do "attention" - just a plain cosine matrix calculation (without learnable weights)
+        # not real attention, just a for cosine matrix calculation
         self.cosine_module = CosineMatrixAttention()
 
-        # bias is set to True in original code (we found it to not help, how could it?)
+        # bias doesn't add any value
         self.dense = nn.Linear(n_kernels, 1, bias=False)
 
-        # init with small weights, otherwise the dense output is way to high for the tanh -> resulting in loss == 1 all the time
-        torch.nn.init.uniform_(self.dense.weight, -0.014, 0.014)  # inits taken from matchzoo
-        #self.dense.bias.data.fill_(0.0)
-
+        # small weights for tanh to avoid loss == 1 all the time
+        torch.nn.init.uniform_(self.dense.weight, -0.014, 0.014)
 
     def forward(self, query: Dict[str, torch.Tensor], document: Dict[str, torch.Tensor]) -> torch.Tensor:
         #
@@ -208,26 +206,6 @@ class KNRM(nn.Module):
         # todo
         output = torch.zeros(1)
         return output
-
-    def github__init__(self,
-                 n_kernels: int):
-
-        super(KNRM, self).__init__()
-
-        # static - kernel size & magnitude variables
-        self.mu = Variable(torch.cuda.FloatTensor(self.kernel_mus(n_kernels)), requires_grad=False).view(1, 1, 1, n_kernels)
-        self.sigma = Variable(torch.cuda.FloatTensor(self.kernel_sigmas(n_kernels)), requires_grad=False).view(1, 1, 1, n_kernels)
-
-        # this does not really do "attention" - just a plain cosine matrix calculation (without learnable weights) 
-        self.cosine_module = CosineMatrixAttention()
-
-        # bias is set to True in original code (we found it to not help, how could it?)
-        self.dense = nn.Linear(n_kernels, 1, bias=False)
-
-        # init with small weights, otherwise the dense output is way to high for the tanh -> resulting in loss == 1 all the time
-        torch.nn.init.uniform_(self.dense.weight, -0.014, 0.014)  # inits taken from matchzoo
-        #self.dense.bias.data.fill_(0.0)
-
 
     def github_forward(self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor,
                 query_pad_oov_mask: torch.Tensor, document_pad_oov_mask: torch.Tensor, 
@@ -286,7 +264,6 @@ class KNRM(nn.Module):
 
     def get_param_secondary(self):
         return {"kernel_weight":self.dense.weight}
-
 
     def kernel_mus(self, n_kernels: int):
         """

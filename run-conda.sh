@@ -41,8 +41,6 @@ conda activate base
 conda create --yes --name noodle-retrieval python=3.6.12 anaconda
 conda activate noodle-retrieval
 
-# pip install -r requirements.txt -> breaks
-
 # setuptools requirements (order matters)
 pip install 'pyqtwebengine<5.13'
 pip install 'pyqt5<5.13'
@@ -67,7 +65,8 @@ pip install --find-links https://download.pytorch.org/whl/torch_stable.html torc
 pip install overrides
 
 # convenience
-pip install numpy pandas
+pip install black isort flake8 mypy
+pip install numpy pandas matplotlib seaborn
 
 # ----------------------------------------------------------------------------- stop
 conda deactivate
