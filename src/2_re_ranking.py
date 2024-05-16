@@ -160,11 +160,43 @@ class IrLabeledTupleDatasetReader(DatasetReader):
 #region models
 
 
+def kernel_mus(n_kernels: int):
+    """
+    mu for each guassian kernel. sits in the middle of each bin.
+    :param n_kernels: number of kernels - where first one is the exact match.
+    :return: l_mu, a list of mu.
+    """
+    l_mu = [1.0] # exact match
+    if n_kernels == 1:
+        return l_mu
+
+    bin_size = 2.0 / (n_kernels - 1)  # score range from [-1, 1]
+    l_mu.append(1 - bin_size / 2)  # mu: middle of the bin
+    for i in range(1, n_kernels - 1):
+        l_mu.append(l_mu[i] - bin_size)
+    return l_mu
+
+
+def kernel_sigmas(n_kernels: int):
+    """
+    sigma for each guassian kernel.
+    :param n_kernels: number of kernels - where first one is the exact match.
+    :return: l_sigma, a list of sigma
+    """
+    l_sigma = [0.0001]  # exact match (small variance)
+    if n_kernels == 1:
+        return l_sigma
+
+    bin_size = 2.0 / (n_kernels - 1)
+    l_sigma += [0.5 * bin_size] * (n_kernels - 1)
+    return l_sigma
+
+
 class KNRM(nn.Module):
     """
     Paper: End-to-End Neural Ad-hoc Ranking with Kernel Pooling, Xiong et al., SIGIR'17
 
-    taken from: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
+    see: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
     """
 
     def __init__(self, word_embeddings: TextFieldEmbedder, n_kernels: int):
@@ -174,8 +206,8 @@ class KNRM(nn.Module):
         self.word_embeddings = word_embeddings
 
         # list of mu and sigma values for the gaussian convolutional kernels
-        mu = torch.FloatTensor(self.kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
-        sigma = torch.FloatTensor(self.kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
+        mu = torch.FloatTensor(kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
+        sigma = torch.FloatTensor(kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
         self.register_buffer("mu", mu) # don't learn
         self.register_buffer("sigma", sigma)
 
@@ -210,8 +242,6 @@ class KNRM(nn.Module):
     def github_forward(self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor,
                 query_pad_oov_mask: torch.Tensor, document_pad_oov_mask: torch.Tensor, 
                 output_secondary_output: bool = False) -> torch.Tensor:
-        # pylint: disable=arguments-differ
-
         #
         # prepare embedding tensors & paddings masks
         # -------------------------------------------------------
@@ -265,36 +295,6 @@ class KNRM(nn.Module):
     def get_param_secondary(self):
         return {"kernel_weight":self.dense.weight}
 
-    def kernel_mus(self, n_kernels: int):
-        """
-        mu for each guassian kernel. sits in the middle of each bin.
-        :param n_kernels: number of kernels - where first one is the exact match.
-        :return: l_mu, a list of mu.
-        """
-        l_mu = [1.0] # exact match
-        if n_kernels == 1:
-            return l_mu
-
-        bin_size = 2.0 / (n_kernels - 1)  # score range from [-1, 1]
-        l_mu.append(1 - bin_size / 2)  # mu: middle of the bin
-        for i in range(1, n_kernels - 1):
-            l_mu.append(l_mu[i] - bin_size)
-        return l_mu
-
-    def kernel_sigmas(self, n_kernels: int):
-        """
-        sigma for each guassian kernel.
-        :param n_kernels: number of kernels - where first one is the exact match.
-        :return: l_sigma, a list of sigma
-        """
-        bin_size = 2.0 / (n_kernels - 1)
-        l_sigma = [0.0001]  # exact match (small variance)
-        if n_kernels == 1:
-            return l_sigma
-
-        l_sigma += [0.5 * bin_size] * (n_kernels - 1)
-        return l_sigma
-
 
 class TK(nn.Module):
     """
@@ -308,8 +308,8 @@ class TK(nn.Module):
         self.word_embeddings = word_embeddings
 
         # static - kernel size & magnitude variables
-        mu = torch.FloatTensor(self.kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
-        sigma = torch.FloatTensor(self.kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
+        mu = torch.FloatTensor(kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
+        sigma = torch.FloatTensor(kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
 
         self.register_buffer("mu", mu)
         self.register_buffer("sigma", sigma)
@@ -334,38 +334,6 @@ class TK(nn.Module):
         # todo
         output = torch.zeros(1)
         return output
-
-    def kernel_mus(self, n_kernels: int):
-        """
-        get the mu for each guassian kernel. Mu is the middle of each bin
-        :param n_kernels: number of kernels (including exact match). first one is exact match
-        :return: l_mu, a list of mu.
-        """
-        l_mu = [1.0]
-        if n_kernels == 1:
-            return l_mu
-
-        bin_size = 2.0 / (n_kernels - 1)  # score range from [-1, 1]
-        l_mu.append(1 - bin_size / 2)  # mu: middle of the bin
-        for i in range(1, n_kernels - 1):
-            l_mu.append(l_mu[i] - bin_size)
-        return l_mu
-
-    def kernel_sigmas(self, n_kernels: int):
-        """
-        get sigmas for each guassian kernel.
-        :param n_kernels: number of kernels (including exactmath.)
-        :param lamb:
-        :param use_exact:
-        :return: l_sigma, a list of simga
-        """
-        bin_size = 2.0 / (n_kernels - 1)
-        l_sigma = [0.0001]  # for exact match. small variance -> exact match
-        if n_kernels == 1:
-            return l_sigma
-
-        l_sigma += [0.5 * bin_size] * (n_kernels - 1)
-        return l_sigma
 
 
 #endregion models
@@ -418,10 +386,13 @@ _triple_reader = IrTripleDatasetReader(lazy=True, max_doc_length=180, max_query_
 _triple_reader = _triple_reader.read(config["train_data"])
 _triple_reader.index_with(vocab)
 loader = PyTorchDataLoader(_triple_reader, batch_size=32)
-# for epoch in range(2):
-#     for batch in Tqdm.tqdm(loader):
-#         # TODO: train loop
-#         pass
+
+exit(0)
+
+for epoch in range(2):
+    for batch in Tqdm.tqdm(loader):
+        # TODO: train loop
+        pass
 
 
 """
@@ -435,7 +406,7 @@ _tuple_reader = _tuple_reader.read(config["test_data"])
 _tuple_reader.index_with(vocab)
 loader = PyTorchDataLoader(_tuple_reader, batch_size=128)
 
-# for batch in Tqdm.tqdm(loader):
-#     # todo test loop
-#     # todo evaluation
-#     pass
+for batch in Tqdm.tqdm(loader):
+    # TODO: test loop
+    # TODO: evaluation
+    pass

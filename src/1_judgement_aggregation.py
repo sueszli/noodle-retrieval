@@ -4,12 +4,6 @@ import torch
 from torch.nn.functional import cosine_similarity
 from pathlib import Path
 
-"""
-merge multiple (query, document, vote) tuples on the same (query, document) pair.
-
-write the aggregated judgements to a file.
-"""
-
 
 base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-1"
 base_in_prev = Path.cwd() / "data-merged" / "data"  # output of previous script
@@ -71,6 +65,9 @@ docs = preprocess_docs(docs)  # "doc_id", "doc_embedding"
 queries = preprocess_queries(queries)  # "query_id", "query_embedding"
 judgements = preprocess_judgements(judgements)  # "relevanceLevel", "queryId", "documentId"
 
+"""
+merge multiple (query, document, vote) tuples on the same (query, document) pair.
+"""
 if __name__ == "__main__":
     f = open(base_out / "fira-22.qrels.tsv", "w")
     total = len(queries)
