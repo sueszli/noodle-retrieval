@@ -50,7 +50,7 @@ retrieval_path = base / "msmarco-fira-21.qrels.retrieval.tsv"
 manual pre-processing of the data
 """
 
-answers = pd.read_csv(answers_path, sep="\t", error_bad_lines=False, quoting=csv.QUOTE_NONE)
+answers = pd.read_csv(answers_path, sep="\t", error_bad_lines=False, quoting=
 for row in answers.iterrows():
     print(row)
     # print(queryid, documentid, relevance_grade, text_selection, "\n\n\n")
