@@ -1,12 +1,10 @@
 Assignment: https://github.com/tuwien-information-retrieval/air-24-template/blob/main/assignment_2.md
 
-Student 1 ID + Name: Yahya Jabary 11912007
+Contributors:
 
-Student 2 ID + Name:
-
-Student 3 ID + Name:
-
-Student 4 ID + Name:
+-   Yahya Jabary - 11912007
+-   Maximilian Höller - ???
+-   Miran Mamsaleh - ???
 
 # Part 1 - Test Collection Preparation
 

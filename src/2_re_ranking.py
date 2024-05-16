@@ -385,7 +385,6 @@ class TK(nn.Module):
 
 #endregion models
 
-
 base = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-2"
 
 config = {
@@ -402,6 +401,8 @@ assert Path(config["train_data"]).exists()
 assert Path(config["validation_data"]).exists()
 assert Path(config["test_data"]).exists()
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # no mps in torch==1.6.0
+print("device:", device)
 
 """
 load data, define model
