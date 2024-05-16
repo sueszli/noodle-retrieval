@@ -61,7 +61,7 @@ class IrTripleDatasetReader(DatasetReader):
         # split line in 3 parts
 
         with open(cached_path(file_path), "r", encoding="utf8") as data_file:
-            # logger.info("Reading instances from lines in file at: %s", file_path)
+            logger.debug("reading instances from lines in file at: %s", file_path)
             for line_num, line in enumerate(data_file):
                 line = line.strip("\n")
 
@@ -119,7 +119,7 @@ class IrLabeledTupleDatasetReader(DatasetReader):
         # split line in 4 parts
 
         with open(cached_path(file_path), "r", encoding="utf8") as data_file:
-            # logger.info("Reading instances from lines in file at: %s", file_path)
+            logger.debug("reading instances from lines in file at: %s", file_path)
             for line_num, line in enumerate(data_file):
                 line = line.strip("\n")
 
@@ -163,6 +163,8 @@ class IrLabeledTupleDatasetReader(DatasetReader):
 class KNRM(nn.Module):
     """
     Paper: End-to-End Neural Ad-hoc Ranking with Kernel Pooling, Xiong et al., SIGIR'17
+
+    see: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
     """
 
     def __init__(self, word_embeddings: TextFieldEmbedder, n_kernels: int):
@@ -171,14 +173,22 @@ class KNRM(nn.Module):
 
         self.word_embeddings = word_embeddings
 
-        # static - kernel size & magnitude variables
+        # static list of mu and sigma values for the gaussian convolutional kernels
         mu = torch.FloatTensor(self.kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
         sigma = torch.FloatTensor(self.kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
-
-        self.register_buffer("mu", mu)
+        self.register_buffer("mu", mu) # prevents updates
         self.register_buffer("sigma", sigma)
 
-        # todo
+        # this does not really do "attention" - just a plain cosine matrix calculation (without learnable weights)
+        self.cosine_module = CosineMatrixAttention()
+
+        # bias is set to True in original code (we found it to not help, how could it?)
+        self.dense = nn.Linear(n_kernels, 1, bias=False)
+
+        # init with small weights, otherwise the dense output is way to high for the tanh -> resulting in loss == 1 all the time
+        torch.nn.init.uniform_(self.dense.weight, -0.014, 0.014)  # inits taken from matchzoo
+        #self.dense.bias.data.fill_(0.0)
+
 
     def forward(self, query: Dict[str, torch.Tensor], document: Dict[str, torch.Tensor]) -> torch.Tensor:
         #
@@ -280,11 +290,11 @@ class KNRM(nn.Module):
 
     def kernel_mus(self, n_kernels: int):
         """
-        get the mu for each guassian kernel. Mu is the middle of each bin
-        :param n_kernels: number of kernels (including exact match). first one is exact match
+        mu for each guassian kernel. sits in the middle of each bin.
+        :param n_kernels: number of kernels - where first one is the exact match.
         :return: l_mu, a list of mu.
         """
-        l_mu = [1.0]
+        l_mu = [1.0] # exact match
         if n_kernels == 1:
             return l_mu
 
@@ -296,14 +306,12 @@ class KNRM(nn.Module):
 
     def kernel_sigmas(self, n_kernels: int):
         """
-        get sigmas for each guassian kernel.
-        :param n_kernels: number of kernels (including exactmath.)
-        :param lamb:
-        :param use_exact:
-        :return: l_sigma, a list of simga
+        sigma for each guassian kernel.
+        :param n_kernels: number of kernels - where first one is the exact match.
+        :return: l_sigma, a list of sigma
         """
         bin_size = 2.0 / (n_kernels - 1)
-        l_sigma = [0.0001]  # for exact match. small variance -> exact match
+        l_sigma = [0.0001]  # exact match (small variance)
         if n_kernels == 1:
             return l_sigma
 
@@ -402,7 +410,7 @@ assert Path(config["validation_data"]).exists()
 assert Path(config["test_data"]).exists()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # no mps in torch==1.6.0
-print("device:", device)
+print(f"device: {device}")
 
 """
 load data, define model
@@ -421,8 +429,8 @@ if config["model"] == "knrm":
 elif config["model"] == "tk":
     model = TK(word_embedder, n_kernels=11, n_layers=2, n_tf_dim=300, n_tf_heads=10)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-print("Model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
-print("Network:", model)
+print("model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
+print("network:", model)
 
 
 """
