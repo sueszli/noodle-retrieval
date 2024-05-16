@@ -9,8 +9,8 @@ base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-1"
 base_in_prev = Path.cwd() / "data-merged" / "data"  # output of previous script
 base_out = Path.cwd() / "output"
 
-docs = pd.read_csv(base_in_prev / "fira-22.documents.embeddings.tsv", sep="\t")
-queries = pd.read_csv(base_in_prev / "fira-22.queries.embeddings.tsv", sep="\t")
+docs: pd.DataFrame = pd.read_csv(base_in_prev / "fira-22.documents.embeddings.tsv", sep="\t")
+queries: pd.DataFrame = pd.read_csv(base_in_prev / "fira-22.queries.embeddings.tsv", sep="\t")
 judgements: pd.DataFrame = pd.read_csv(base_in / "fira-22.judgements-anonymized.tsv", sep="\t")
 
 

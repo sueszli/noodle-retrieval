@@ -220,9 +220,7 @@ See: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672
 
 ## Data description
 
-Question answering tuples and answers from FiRA annotations in 2021 (covering natural queries from MSMARCO)
-
--   `msmarco-fira-21.qrels.qa-answers.tsv`:
+-   `msmarco-fira-21.qrels.qa-answers.tsv`: Used to evaluate the QA model.
 
     No header.
 
