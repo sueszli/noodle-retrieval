@@ -232,7 +232,6 @@ class KNRM(nn.Module):
         #self.dense.bias.data.fill_(0.0)
 
     def forward(self, query: Dict[str, torch.Tensor], document: Dict[str, torch.Tensor]) -> torch.Tensor:
-
         """
         assignment
         """
@@ -249,11 +248,11 @@ class KNRM(nn.Module):
         """
         github
         """
-
         #
         # prepare embedding tensors & paddings masks
         # -------------------------------------------------------
 
+        print("\033[92m", "REACHED INNER 0", "\033[0m")
         query_by_doc_mask = torch.bmm(query_pad_oov_mask.unsqueeze(-1), document_pad_oov_mask.unsqueeze(-1).transpose(-1, -2))
         query_by_doc_mask_view = query_by_doc_mask.unsqueeze(-1)
 
@@ -262,16 +261,18 @@ class KNRM(nn.Module):
         # -------------------------------------------------------
 
         # shape: (batch, query_max, doc_max)
+        print("\033[92m", "REACHED INNER 1", "\033[0m")
         cosine_matrix = self.cosine_module.forward(query_embeddings, document_embeddings)
         cosine_matrix_masked = cosine_matrix * query_by_doc_mask
         cosine_matrix_extradim = cosine_matrix_masked.unsqueeze(-1)
-
+        print("\033[92m", "REACHED INNER 2", "\033[0m")
         #
         # gaussian kernels & soft-TF
         #
         # first run through kernel, then sum on doc dim then sum on query dim
         # -------------------------------------------------------
         
+        print("\033[92m", "REACHED INNER 3", "\033[0m")
         raw_kernel_results = torch.exp(- torch.pow(cosine_matrix_extradim - self.mu, 2) / (2 * torch.pow(self.sigma, 2)))
         kernel_results_masked = raw_kernel_results * query_by_doc_mask_view
 
@@ -280,13 +281,16 @@ class KNRM(nn.Module):
         log_per_kernel_query_masked = log_per_kernel_query * query_pad_oov_mask.unsqueeze(-1) # make sure we mask out padding values
 
         per_kernel = torch.sum(log_per_kernel_query_masked, 1) 
+        print("\033[92m", "REACHED INNER 4", "\033[0m")
 
         ##
         ## "Learning to rank" layer - connects kernels with learned weights
         ## -------------------------------------------------------
 
+        print("\033[92m", "REACHED INNER 5", "\033[0m")
         dense_out = self.dense(per_kernel)
         score = torch.squeeze(dense_out,1) #torch.tanh(dense_out), 1)
+        print("\033[92m", "REACHED INNER 6", "\033[0m")
 
         return score
 
@@ -403,8 +407,11 @@ for epoch in range(config["epochs"]):
 
         optimizer.zero_grad()
 
+        print("\033[92m", "REACHED OUTER 0", "\033[0m")
         pos = model(query, doc_pos)
+        print("\033[92m", "REACHED OUTER 1", "\033[0m")
         neg = model(query, doc_neg)
+        print("\033[92m", "REACHED OUTER 2", "\033[0m")
         loss = hinge_loss(pos, neg)
 
         loss.backward()
