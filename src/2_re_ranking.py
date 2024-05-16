@@ -200,7 +200,6 @@ class KNRM(nn.Module):
     """
 
     def __init__(self, word_embeddings: TextFieldEmbedder, n_kernels: int):
-
         super(KNRM, self).__init__()
 
         self.word_embeddings = word_embeddings
@@ -221,49 +220,26 @@ class KNRM(nn.Module):
         torch.nn.init.uniform_(self.dense.weight, -0.014, 0.014)
 
     def forward(self, query: Dict[str, torch.Tensor], document: Dict[str, torch.Tensor]) -> torch.Tensor:
-        #
-        # prepare embedding tensors & paddings masks
-        # -------------------------------------------------------
 
-        # shape: (batch, query_max)
-        query_pad_oov_mask = (query["tokens"]["tokens"] > 0).float()  # > 1 to also mask oov terms
-        # shape: (batch, doc_max)
-        document_pad_oov_mask = (document["tokens"]["tokens"] > 0).float()
-
-        # shape: (batch, query_max,emb_dim)
+        # "padding out of vocabulary tokens", where 0 is padding, 1 is oov
+        query_pad_oov_mask = (query["tokens"]["tokens"] > 0).float() # shape: (batch, query_max)
+        document_pad_oov_mask = (document["tokens"]["tokens"] > 0).float() # shape: (batch, doc_max)
+        
+        # get embeddings
         query_embeddings = self.word_embeddings(query)
-        # shape: (batch, document_max,emb_dim)
         document_embeddings = self.word_embeddings(document)
 
-        # todo
-        output = torch.zeros(1)
-        return output
-
-    def github_forward(self, query_embeddings: torch.Tensor, document_embeddings: torch.Tensor,
-                query_pad_oov_mask: torch.Tensor, document_pad_oov_mask: torch.Tensor, 
-                output_secondary_output: bool = False) -> torch.Tensor:
-        #
         # prepare embedding tensors & paddings masks
-        # -------------------------------------------------------
-
         query_by_doc_mask = torch.bmm(query_pad_oov_mask.unsqueeze(-1), document_pad_oov_mask.unsqueeze(-1).transpose(-1, -2))
         query_by_doc_mask_view = query_by_doc_mask.unsqueeze(-1)
 
-        #
         # cosine matrix
-        # -------------------------------------------------------
-
-        # shape: (batch, query_max, doc_max)
-        cosine_matrix = self.cosine_module.forward(query_embeddings, document_embeddings)
+        cosine_matrix = self.cosine_module.forward(query_embeddings, document_embeddings) # shape: (batch, query_max, doc_max)
         cosine_matrix_masked = cosine_matrix * query_by_doc_mask
         cosine_matrix_extradim = cosine_matrix_masked.unsqueeze(-1)
 
-        #
         # gaussian kernels & soft-TF
-        #
         # first run through kernel, then sum on doc dim then sum on query dim
-        # -------------------------------------------------------
-        
         raw_kernel_results = torch.exp(- torch.pow(cosine_matrix_extradim - self.mu, 2) / (2 * torch.pow(self.sigma, 2)))
         kernel_results_masked = raw_kernel_results * query_by_doc_mask_view
 
@@ -273,27 +249,15 @@ class KNRM(nn.Module):
 
         per_kernel = torch.sum(log_per_kernel_query_masked, 1) 
 
-        ##
-        ## "Learning to rank" layer - connects kernels with learned weights
-        ## -------------------------------------------------------
-
+        # "Learning to rank" layer - connects kernels with learned weights
         dense_out = self.dense(per_kernel)
         score = torch.squeeze(dense_out,1) #torch.tanh(dense_out), 1)
 
-        if output_secondary_output:
-            query_mean_vector = query_embeddings.sum(dim=1) / query_pad_oov_mask.sum(dim=1).unsqueeze(-1)
-            return score, {"score":score,"per_kernel":per_kernel,"query_mean_vector":query_mean_vector,"cosine_matrix_masked":cosine_matrix_masked}
-        else:
-            return score
+        return score
 
     def forward_representation(self, sequence_embeddings: torch.Tensor, sequence_mask: torch.Tensor) -> torch.Tensor:
+        # multiply embeddings with mask to zero out padding embeddings
         return sequence_embeddings * sequence_mask.unsqueeze(-1)
-
-    def get_param_stats(self):
-        return "KNRM: linear weight: "+str(self.dense.weight.data)
-
-    def get_param_secondary(self):
-        return {"kernel_weight":self.dense.weight}
 
 
 class TK(nn.Module):
