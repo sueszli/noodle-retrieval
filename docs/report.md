@@ -223,8 +223,24 @@ See: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672
 Question answering tuples and answers from FiRA annotations in 2021 (covering natural queries from MSMARCO)
 
 -   `msmarco-fira-21.qrels.qa-answers.tsv`:
+
+    No header.
+
+    Format: `queryid, documentid, relevance-grade, text-selection (multiple answers possible, split with tab)`
+
 -   `msmarco-fira-21.qrels.qa-tuples.tsv`:
+
+    No header.
+
+    Format: `queryid, documentid, relevance-grade, query-text, document-text, text-selection (multiple answers possible, split with tab)`
+
 -   `msmarco-fira-21.qrels.retrieval.tsv`:
+
+    No header.
+
+    Example: `135386 0 100163 3`
+
+    Format: `queryid, 0, documentid, relevance-grade`
 
 <br><br>
 
