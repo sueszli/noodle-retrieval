@@ -20,6 +20,7 @@ from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder, TextFi
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+import torch.nn.functional as F
 
 from overrides import overrides
 from blingfire import text_to_words
@@ -30,6 +31,7 @@ import logging
 
 
 prepare_environment(Params({}))  # seed
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -160,86 +162,116 @@ class IrLabeledTupleDatasetReader(DatasetReader):
 #region models
 
 
-def kernel_mus(n_kernels: int):
-    """
-    mu for each guassian kernel. sits in the middle of each bin.
-    :param n_kernels: number of kernels - where first one is the exact match.
-    :return: l_mu, a list of mu.
-    """
-    l_mu = [1.0] # exact match
-    if n_kernels == 1:
-        return l_mu
+# def kernel_mus(n_kernels: int):
+#     """
+#     mu for each guassian kernel. sits in the middle of each bin.
+#     :param n_kernels: number of kernels - where first one is the exact match.
+#     :return: l_mu, a list of mu.
+#     """
+#     l_mu = [1.0] # exact match
+#     if n_kernels == 1:
+#         return l_mu
 
-    bin_size = 2.0 / (n_kernels - 1)  # score range from [-1, 1]
-    l_mu.append(1 - bin_size / 2)  # mu: middle of the bin
-    for i in range(1, n_kernels - 1):
-        l_mu.append(l_mu[i] - bin_size)
-    return l_mu
+#     bin_size = 2.0 / (n_kernels - 1)  # score range from [-1, 1]
+#     l_mu.append(1 - bin_size / 2)  # mu: middle of the bin
+#     for i in range(1, n_kernels - 1):
+#         l_mu.append(l_mu[i] - bin_size)
+#     return l_mu
 
 
-def kernel_sigmas(n_kernels: int):
-    """
-    sigma for each guassian kernel.
-    :param n_kernels: number of kernels - where first one is the exact match.
-    :return: l_sigma, a list of sigma
-    """
-    l_sigma = [0.0001]  # exact match (small variance)
-    if n_kernels == 1:
-        return l_sigma
+# def kernel_sigmas(n_kernels: int):
+#     """
+#     sigma for each guassian kernel.
+#     :param n_kernels: number of kernels - where first one is the exact match.
+#     :return: l_sigma, a list of sigma
+#     """
+#     l_sigma = [0.0001]  # exact match (small variance)
+#     if n_kernels == 1:
+#         return l_sigma
 
-    bin_size = 2.0 / (n_kernels - 1)
-    l_sigma += [0.5 * bin_size] * (n_kernels - 1)
-    return l_sigma
+#     bin_size = 2.0 / (n_kernels - 1)
+#     l_sigma += [0.5 * bin_size] * (n_kernels - 1)
+#     return l_sigma
 
 
 class KNRM(nn.Module):
-    """
+    '''
     Paper: End-to-End Neural Ad-hoc Ranking with Kernel Pooling, Xiong et al., SIGIR'17
 
-    see: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
-    """
+    Reference code (paper author): https://github.com/AdeDZY/K-NRM/blob/master/knrm/model/model_knrm.py (but in tensorflow)
+    third-hand reference: https://github.com/NTMC-Community/MatchZoo/blob/master/matchzoo/models/knrm.py
+    '''
 
-    def __init__(self, word_embeddings: TextFieldEmbedder, n_kernels: int):
+    def __init__(self,
+                 word_embeddings: TextFieldEmbedder,
+                 n_kernels: int):
+
         super(KNRM, self).__init__()
 
         self.word_embeddings = word_embeddings
 
-        # list of mu and sigma values for the gaussian convolutional kernels
-        mu = torch.FloatTensor(kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
-        sigma = torch.FloatTensor(kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
-        self.register_buffer("mu", mu) # don't learn
-        self.register_buffer("sigma", sigma)
+        # static - kernel size & magnitude variables
+        # mu = torch.FloatTensor(self.kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
+        # sigma = torch.FloatTensor(self.kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
 
-        # not real attention, just a for cosine matrix calculation
+        # self.register_buffer('mu', mu)
+        # self.register_buffer('sigma', sigma)
+
+        # static - kernel size & magnitude variables
+        self.mu = Variable(torch.FloatTensor(self.kernel_mus(n_kernels)), requires_grad=False).view(1, 1, 1, n_kernels)
+        self.sigma = Variable(torch.FloatTensor(self.kernel_sigmas(n_kernels)), requires_grad=False).view(1, 1, 1, n_kernels)
+
+        # this does not really do "attention" - just a plain cosine matrix calculation (without learnable weights) 
         self.cosine_module = CosineMatrixAttention()
 
-        # bias doesn't add any value
+        # bias is set to True in original code (we found it to not help, how could it?)
         self.dense = nn.Linear(n_kernels, 1, bias=False)
 
-        # small weights for tanh to avoid loss == 1 all the time
-        torch.nn.init.uniform_(self.dense.weight, -0.014, 0.014)
+        # init with small weights, otherwise the dense output is way to high for the tanh -> resulting in loss == 1 all the time
+        torch.nn.init.uniform_(self.dense.weight, -0.014, 0.014)  # inits taken from matchzoo
+        #self.dense.bias.data.fill_(0.0)
 
     def forward(self, query: Dict[str, torch.Tensor], document: Dict[str, torch.Tensor]) -> torch.Tensor:
 
-        # "padding out of vocabulary tokens", where 0 is padding, 1 is oov
-        query_pad_oov_mask = (query["tokens"]["tokens"] > 0).float() # shape: (batch, query_max)
-        document_pad_oov_mask = (document["tokens"]["tokens"] > 0).float() # shape: (batch, doc_max)
-        
-        # get embeddings
+        """
+        assignment
+        """
+        # shape: (batch, query_max)
+        query_pad_oov_mask = (query["tokens"]["tokens"] > 0).float() # > 1 to also mask oov terms
+        # shape: (batch, doc_max)
+        document_pad_oov_mask = (document["tokens"]["tokens"] > 0).float()
+
+        # shape: (batch, query_max,emb_dim)
         query_embeddings = self.word_embeddings(query)
+        # shape: (batch, document_max,emb_dim)
         document_embeddings = self.word_embeddings(document)
 
+        """
+        github
+        """
+
+        #
         # prepare embedding tensors & paddings masks
+        # -------------------------------------------------------
+
         query_by_doc_mask = torch.bmm(query_pad_oov_mask.unsqueeze(-1), document_pad_oov_mask.unsqueeze(-1).transpose(-1, -2))
         query_by_doc_mask_view = query_by_doc_mask.unsqueeze(-1)
 
+        #
         # cosine matrix
-        cosine_matrix = self.cosine_module.forward(query_embeddings, document_embeddings) # shape: (batch, query_max, doc_max)
+        # -------------------------------------------------------
+
+        # shape: (batch, query_max, doc_max)
+        cosine_matrix = self.cosine_module.forward(query_embeddings, document_embeddings)
         cosine_matrix_masked = cosine_matrix * query_by_doc_mask
         cosine_matrix_extradim = cosine_matrix_masked.unsqueeze(-1)
 
+        #
         # gaussian kernels & soft-TF
+        #
         # first run through kernel, then sum on doc dim then sum on query dim
+        # -------------------------------------------------------
+        
         raw_kernel_results = torch.exp(- torch.pow(cosine_matrix_extradim - self.mu, 2) / (2 * torch.pow(self.sigma, 2)))
         kernel_results_masked = raw_kernel_results * query_by_doc_mask_view
 
@@ -249,55 +281,59 @@ class KNRM(nn.Module):
 
         per_kernel = torch.sum(log_per_kernel_query_masked, 1) 
 
-        # "Learning to rank" layer - connects kernels with learned weights
+        ##
+        ## "Learning to rank" layer - connects kernels with learned weights
+        ## -------------------------------------------------------
+
         dense_out = self.dense(per_kernel)
         score = torch.squeeze(dense_out,1) #torch.tanh(dense_out), 1)
 
         return score
 
     def forward_representation(self, sequence_embeddings: torch.Tensor, sequence_mask: torch.Tensor) -> torch.Tensor:
-        # multiply embeddings with mask to zero out padding embeddings
         return sequence_embeddings * sequence_mask.unsqueeze(-1)
+
+    def get_param_stats(self):
+        return "KNRM: linear weight: "+str(self.dense.weight.data)
+
+    def get_param_secondary(self):
+        return {"kernel_weight":self.dense.weight}
+
+    def kernel_mus(self, n_kernels: int):
+        """
+        get the mu for each guassian kernel. Mu is the middle of each bin
+        :param n_kernels: number of kernels (including exact match). first one is exact match
+        :return: l_mu, a list of mu.
+        """
+        l_mu = [1.0]
+        if n_kernels == 1:
+            return l_mu
+
+        bin_size = 2.0 / (n_kernels - 1)  # score range from [-1, 1]
+        l_mu.append(1 - bin_size / 2)  # mu: middle of the bin
+        for i in range(1, n_kernels - 1):
+            l_mu.append(l_mu[i] - bin_size)
+        return l_mu
+
+    def kernel_sigmas(self, n_kernels: int):
+        """
+        get sigmas for each guassian kernel.
+        :param n_kernels: number of kernels (including exactmath.)
+        :param lamb:
+        :param use_exact:
+        :return: l_sigma, a list of simga
+        """
+        bin_size = 2.0 / (n_kernels - 1)
+        l_sigma = [0.0001]  # for exact match. small variance -> exact match
+        if n_kernels == 1:
+            return l_sigma
+
+        l_sigma += [0.5 * bin_size] * (n_kernels - 1)
+        return l_sigma
 
 
 class TK(nn.Module):
-    """
-    Paper: S. Hofstätter, M. Zlabinger, and A. Hanbury 2020. Interpretable & Time-Budget-Constrained Contextualization for Re-Ranking. In Proc. of ECAI
-    """
-
-    def __init__(self, word_embeddings: TextFieldEmbedder, n_kernels: int, n_layers: int, n_tf_dim: int, n_tf_heads: int):
-
-        super(TK, self).__init__()
-
-        self.word_embeddings = word_embeddings
-
-        # static - kernel size & magnitude variables
-        mu = torch.FloatTensor(kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
-        sigma = torch.FloatTensor(kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
-
-        self.register_buffer("mu", mu)
-        self.register_buffer("sigma", sigma)
-
-        # todo
-
-    def forward(self, query: Dict[str, torch.Tensor], document: Dict[str, torch.Tensor]) -> torch.Tensor:
-        #
-        # prepare embedding tensors & paddings masks
-        # -------------------------------------------------------
-
-        # shape: (batch, query_max)
-        query_pad_oov_mask = (query["tokens"]["tokens"] > 0).float()  # > 1 to also mask oov terms
-        # shape: (batch, doc_max)
-        document_pad_oov_mask = (document["tokens"]["tokens"] > 0).float()
-
-        # shape: (batch, query_max,emb_dim)
-        query_embeddings = self.word_embeddings(query)
-        # shape: (batch, document_max,emb_dim)
-        document_embeddings = self.word_embeddings(document)
-
-        # todo
-        output = torch.zeros(1)
-        return output
+    pass
 
 
 #endregion models
@@ -305,9 +341,11 @@ class TK(nn.Module):
 base = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-2"
 
 config = {
+    "model": "knrm",
+    "epochs": 2,
+
     "vocab_directory": base / "allen_vocab_lower_10",
     "pre_trained_embedding": base / "glove.42B.300d.txt",
-    "model": "knrm",
     "train_data": base / "triples.train.tsv",
     "validation_data": base / "msmarco_tuples.validation.tsv",
     "test_data": base / "msmarco_tuples.test.tsv",
@@ -351,12 +389,33 @@ _triple_reader = _triple_reader.read(config["train_data"])
 _triple_reader.index_with(vocab)
 loader = PyTorchDataLoader(_triple_reader, batch_size=32)
 
-exit(0)
+def hinge_loss(pos: torch.Tensor, neg: torch.Tensor) -> torch.Tensor:
+    return torch.clamp(1 - pos + neg, min=0).mean()
 
-for epoch in range(2):
+for epoch in range(config["epochs"]):
+    model.train()
+    total_loss = 0
+
     for batch in Tqdm.tqdm(loader):
-        # TODO: train loop
-        pass
+        query = batch["query_tokens"]
+        doc_pos = batch["doc_pos_tokens"]
+        doc_neg = batch["doc_neg_tokens"]
+
+        optimizer.zero_grad()
+
+        pos = model(query, doc_pos)
+        neg = model(query, doc_neg)
+        loss = hinge_loss(pos, neg)
+
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+    
+    print(f"epoch {epoch} loss: {total_loss}")
+
+
+exit(0)
 
 
 """

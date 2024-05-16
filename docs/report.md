@@ -170,6 +170,8 @@ Just using the mode of the expert votes would be more efficient and almost as ef
 
 Neural re-ranking is a technique to improve the quality of search results by using a neural network to re-rank the results of a search engine.
 
+See: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
+
 ## Data description
 
 -   `allen_vocab_lower_{5/10}`: AllenNLP vocabulary
