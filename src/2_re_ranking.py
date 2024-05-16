@@ -161,39 +161,6 @@ class IrLabeledTupleDatasetReader(DatasetReader):
 
 #region models
 
-
-# def kernel_mus(n_kernels: int):
-#     """
-#     mu for each guassian kernel. sits in the middle of each bin.
-#     :param n_kernels: number of kernels - where first one is the exact match.
-#     :return: l_mu, a list of mu.
-#     """
-#     l_mu = [1.0] # exact match
-#     if n_kernels == 1:
-#         return l_mu
-
-#     bin_size = 2.0 / (n_kernels - 1)  # score range from [-1, 1]
-#     l_mu.append(1 - bin_size / 2)  # mu: middle of the bin
-#     for i in range(1, n_kernels - 1):
-#         l_mu.append(l_mu[i] - bin_size)
-#     return l_mu
-
-
-# def kernel_sigmas(n_kernels: int):
-#     """
-#     sigma for each guassian kernel.
-#     :param n_kernels: number of kernels - where first one is the exact match.
-#     :return: l_sigma, a list of sigma
-#     """
-#     l_sigma = [0.0001]  # exact match (small variance)
-#     if n_kernels == 1:
-#         return l_sigma
-
-#     bin_size = 2.0 / (n_kernels - 1)
-#     l_sigma += [0.5 * bin_size] * (n_kernels - 1)
-#     return l_sigma
-
-
 class KNRM(nn.Module):
     '''
     Paper: End-to-End Neural Ad-hoc Ranking with Kernel Pooling, Xiong et al., SIGIR'17
