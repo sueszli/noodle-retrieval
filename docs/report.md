@@ -1,5 +1,7 @@
 Assignment: https://github.com/tuwien-information-retrieval/air-24-template/blob/main/assignment_2.md
 
+Other solutions: https://github.com/orgs/tuwien-information-retrieval/repositories?type=all
+
 Contributors:
 
 -   Yahya Jabary - 11912007
@@ -215,6 +217,14 @@ See: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672
 <br><br>
 
 # Part 3 - Extractive QA
+
+## Data description
+
+Question answering tuples and answers from FiRA annotations in 2021 (covering natural queries from MSMARCO)
+
+-   `msmarco-fira-21.qrels.qa-answers.tsv`:
+-   `msmarco-fira-21.qrels.qa-tuples.tsv`:
+-   `msmarco-fira-21.qrels.retrieval.tsv`:
 
 <br><br>
 

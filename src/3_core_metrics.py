@@ -3,6 +3,7 @@
 # ------------------------------------------------------------
 #
 
+import sys
 import numpy as np
 import re
 import string
@@ -202,6 +203,8 @@ def get_tokens(s):
 #
 # use to get exact (normalized) overlap for 1 answer and 1 gold label
 #
+
+
 def compute_exact(a_gold, a_pred):
     return int(normalize_answer(a_gold) == normalize_answer(a_pred))
 
@@ -209,6 +212,8 @@ def compute_exact(a_gold, a_pred):
 #
 # use to get f1 (normalized) overlap for 1 answer and 1 gold label
 #
+
+
 def compute_f1(a_gold, a_pred):
     gold_toks = get_tokens(a_gold)
     pred_toks = get_tokens(a_pred)
@@ -271,8 +276,6 @@ def load_ranking(path, qrels=None):
 
 
 if __name__ == "__main__":
-    import sys
-
     if len(sys.argv) == 3:
         metrics = calculate_metrics_plain(load_ranking(sys.argv[2]), load_qrels(sys.argv[1]), binarization_point=1)
         print("#####################")
