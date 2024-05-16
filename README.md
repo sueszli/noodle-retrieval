@@ -2,17 +2,17 @@ _how to install_
 
 run any of the provided shell scripts. they decompress the data and install the necessary packages within the container of your choice.
 
--   conda
+-   **conda**
 
     works great. no issues.
 
--   docker
+-   **docker**
 
     works well - unless you want to use the latest stable vscode version as of may 2024.
 
     see: https://github.com/microsoft/vscode/issues/174632
 
--   google colab
+-   **google colab**
 
     not an option.
 
