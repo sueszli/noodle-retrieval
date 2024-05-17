@@ -35,7 +35,7 @@ data:
 
 import pandas as pd
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering
-from tqdm import tqdm
+from tqdm import tqdm # shows progress
 from pathlib import Path
 import torch
 
@@ -45,17 +45,22 @@ answers_path = base / "msmarco-fira-21.qrels.qa-answers.tsv"
 tuples_path  = base / "msmarco-fira-21.qrels.qa-tuples.tsv"
 retrieval_path = base / "msmarco-fira-21.qrels.retrieval.tsv"
 
+def parse_answers(answers_path: Path) -> pd.DataFrame:
+    answers: pd.DataFrame = pd.DataFrame(columns=["queryid", "documentid", "relevance-grade", "text-selection"])
+    answers_f = open(answers_path, "r")
+    for line in tqdm(answers_f.readlines()):
+        split_line = line.strip().split("\t")
+        qid = split_line[0]
+        docid = split_line[1]
+        rel_grade = split_line[2]
+        text_selection = split_line[3:]
+        answers = answers.append({"queryid": qid, "documentid": docid, "relevance-grade": rel_grade, "text-selection": text_selection}, ignore_index=True)
+    answers_f.close()
+    return answers
 
-"""
-manual pre-processing of the data
-"""
+# answers: pd.DataFrame = parse_answers(answers_path)
 
-# answers = pd.read_csv(answers_path, sep="\t", error_bad_lines=False, quoting=
-# for row in answers.iterrows():
-#     print(row)
-    # print(queryid, documentid, relevance_grade, text_selection, "\n\n\n")
 
-    
 
 
 # tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-distilled-squad")
