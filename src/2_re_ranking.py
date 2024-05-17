@@ -384,53 +384,6 @@ class TK(nn.Module):
 # endregion models
 
 
-"""
-├── data-merged
-│   └── data
-│       ├── air-exercise-2
-│       │   ├── Part-1
-│       │   │   ├── fira-22.baseline-qrels.tsv
-│       │   │   ├── fira-22.documents.tsv
-│       │   │   ├── fira-22.judgements-anonymized.tsv
-│       │   │   └── fira-22.queries.tsv
-│       │   ├── Part-2
-│       │   │   ├── allen_vocab_lower_10
-│       │   │   │   ├── non_padded_namespaces.txt
-│       │   │   │   └── tokens.txt
-│       │   │   ├── allen_vocab_lower_5
-│       │   │   │   ├── non_padded_namespaces.txt
-│       │   │   │   └── tokens.txt
-│       │   │   ├── fira-22.tuples.tsv
-│       │   │   ├── glove.42B.300d.txt
-│       │   │   ├── msmarco_qrels.txt
-│       │   │   ├── msmarco_queries.test.tsv
-│       │   │   ├── msmarco_queries.validation.tsv
-│       │   │   ├── msmarco_tuples.test.tsv
-│       │   │   ├── msmarco_tuples.validation.tsv
-│       │   │   └── triples.train.tsv
-│       │   └── Part-3
-│       │       ├── msmarco-fira-21.qrels.qa-answers.tsv
-│       │       ├── msmarco-fira-21.qrels.qa-tuples.tsv
-│       │       └── msmarco-fira-21.qrels.retrieval.tsv
-│       ├── fira-22.documents.embeddings.tsv
-│       └── fira-22.queries.embeddings.tsv
-├── docker-compose.yml
-├── docs
-│   └── report.md
-├── output
-│   └── fira-22.qrels.tsv
-├── pyproject.toml
-├── run-conda.sh
-├── run-docker.sh
-└── src
-    ├── 1_gen_embeddings.py
-    ├── 1_judgement_aggregation.py
-    ├── 1_meta_judgement.ipynb
-    ├── 2_re_ranking.py
-    ├── 3_core_metrics.py
-    └── 3_extractive_qa.py
-"""
-
 base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2"
 base_out = Path.cwd() / "output"
 
@@ -472,7 +425,13 @@ assert Path(config["vocab_directory"]).exists()
 assert Path(config["pre_trained_embedding"]).exists()
 assert Path(config["train_data"]).exists()
 assert Path(config["validation_data"]).exists()
-assert Path(config["test_data"]).exists()
+assert Path(config["eval"]).exists()
+assert Path(config["reranking"]["input"]).exists()
+assert Path(config["reranking"]["eval"]).exists()
+assert Path(config["baseline"]["input"]).exists()
+assert Path(config["baseline"]["eval"]).exists()
+assert Path(config["ds"]["input"]).exists()
+assert Path(config["ds"]["eval"]).exists()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # no mps in torch==1.6.0
 print(f"device: {device}")
