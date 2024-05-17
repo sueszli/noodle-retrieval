@@ -58,7 +58,7 @@ def parse_answers(answers_path: Path) -> pd.DataFrame:
     answers_f.close()
     return answers
 
-# answers: pd.DataFrame = parse_answers(answers_path)
+answers: pd.DataFrame = parse_answers(answers_path)
 
 
 

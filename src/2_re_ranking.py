@@ -1,4 +1,5 @@
-from allennlp.common import Params, Tqdm
+from allennlp.common import Params
+from allennlp.common import Tqdm # progress bar in loops
 from allennlp.common.util import prepare_environment
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.file_utils import cached_path
@@ -28,7 +29,6 @@ from blingfire import text_to_words
 from pathlib import Path
 from typing import Dict, Iterator, List
 import logging
-
 
 prepare_environment(Params({}))  # seed
 logging.basicConfig(level=logging.INFO)
@@ -178,15 +178,15 @@ class KNRM(nn.Module):
         self.word_embeddings = word_embeddings
 
         # static - kernel size & magnitude variables
-        # mu = torch.FloatTensor(self.kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
-        # sigma = torch.FloatTensor(self.kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
+        mu = torch.FloatTensor(self.kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
+        sigma = torch.FloatTensor(self.kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
 
-        # self.register_buffer('mu', mu)
-        # self.register_buffer('sigma', sigma)
+        self.register_buffer('mu', mu)
+        self.register_buffer('sigma', sigma)
 
         # static - kernel size & magnitude variables
-        self.mu = Variable(torch.FloatTensor(self.kernel_mus(n_kernels)), requires_grad=False).view(1, 1, 1, n_kernels)
-        self.sigma = Variable(torch.FloatTensor(self.kernel_sigmas(n_kernels)), requires_grad=False).view(1, 1, 1, n_kernels)
+        # self.mu = Variable(torch.FloatTensor(self.kernel_mus(n_kernels)), requires_grad=False).view(1, 1, 1, n_kernels)
+        # self.sigma = Variable(torch.FloatTensor(self.kernel_sigmas(n_kernels)), requires_grad=False).view(1, 1, 1, n_kernels)
 
         # this does not really do "attention" - just a plain cosine matrix calculation (without learnable weights) 
         self.cosine_module = CosineMatrixAttention()
@@ -383,18 +383,22 @@ class TK(nn.Module):
 
 #endregion models
 
-base = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-2"
+base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-2"
+base_out = Path.cwd() / "output"
 
 config = {
     "model": "knrm",
     "epochs": 2,
 
-    "vocab_directory": base / "allen_vocab_lower_10",
-    "pre_trained_embedding": base / "glove.42B.300d.txt",
-    "train_data": base / "triples.train.tsv",
-    "validation_data": base / "msmarco_tuples.validation.tsv",
-    "test_data": base / "msmarco_tuples.test.tsv",
+    "vocab_directory": base_in / "allen_vocab_lower_10",
+    "pre_trained_embedding": base_in / "glove.42B.300d.txt",
+    "train_data": base_in / "triples.train.tsv",
+    "validation_data": base_in / "msmarco_tuples.validation.tsv",
+    
+    "test_data": base_in / "msmarco_tuples.test.tsv",
 }
+
+
 assert Path(config["vocab_directory"]).exists()
 assert Path(config["pre_trained_embedding"]).exists()
 assert Path(config["train_data"]).exists()

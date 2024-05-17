@@ -172,8 +172,6 @@ Just using the mode of the expert votes would be more efficient and almost as ef
 
 Neural re-ranking is a technique to improve the quality of search results by using a neural network to re-rank the results of a search engine.
 
-See: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
-
 ## Data description
 
 -   `allen_vocab_lower_{5/10}`: AllenNLP vocabulary
@@ -214,7 +212,11 @@ See: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672
 
     Format: `word, embedding`
 
-Note that in the TK-paper the authors used an attention head size of 32. As this is not possible with an embedding size of 300, this implies that an additional padding is used. We did not implement such a padding and used 15 attention heads instead. Also, after computing the kernel results, the paper suggests using a log-normalization and a length-normalization both on the kernel scores. Those two seperate results are fed into a linear layer to compute a scalar score. In the end these scores are summed up together via a weighted sum to produce a final ranking score. The whole process of layer/log normalization was not implemented as well. Instead, after contectualization, we took the same approach as the with the KNRM-model. This may lead to worse results.
+## KNRM: End-to-End Neural Ad-hoc Ranking with Kernel Pooling
+
+See: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
+
+## TK: Interpretable & Time-Budget-Constrained Contextualization for Re-Ranking
 
 <br><br>
 
