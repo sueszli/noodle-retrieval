@@ -526,173 +526,42 @@ class TK(nn.Module):
 # endregion models
 
 
-# region main
-
-# base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-2"
-# base_out = Path.cwd() / "output"
-
-# config = {
-#     "model": "knrm",
-#     "epochs": 2,
-
-#     "vocab_directory": base_in / "allen_vocab_lower_10",
-#     "pre_trained_embedding": base_in / "glove.42B.300d.txt",
-#     "train_data": base_in / "triples.train.tsv",
-#     "validation_data": base_in / "msmarco_tuples.validation.tsv",
-    
-#     "test_data": base_in / "msmarco_tuples.test.tsv",
-# }
-
-
-# assert Path(config["vocab_directory"]).exists()
-# assert Path(config["pre_trained_embedding"]).exists()
-# assert Path(config["train_data"]).exists()
-# assert Path(config["validation_data"]).exists()
-# assert Path(config["test_data"]).exists()
-
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # no mps in torch==1.6.0
-# print(f"device: {device}")
-
-# """
-# load data, define model
-# """
-
-# # get words that occur at least 10 times
-# vocab = Vocabulary.from_files(config["vocab_directory"])
-
-# # map words to (pre-trained) embeddings
-# tokens_embedder = Embedding(vocab=vocab, pretrained_file=str(config["pre_trained_embedding"]), embedding_dim=300, trainable=True, padding_index=0)
-# word_embedder = BasicTextFieldEmbedder({"tokens": tokens_embedder})
-
-# # define model
-# if config["model"] == "knrm":
-#     model = KNRM(word_embedder, n_kernels=11)
-# elif config["model"] == "tk":
-#     model = TK(word_embedder, n_kernels=11, n_layers=2, n_tf_dim=300, n_tf_heads=10)
-# optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-# print("model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
-# print("network:", model)
-
-
-# """
-# train
-# """
-
-# _triple_reader = IrTripleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
-# _triple_reader = _triple_reader.read(config["train_data"])
-# _triple_reader.index_with(vocab)
-# loader = PyTorchDataLoader(_triple_reader, batch_size=32)
-
-# def hinge_loss(pos: torch.Tensor, neg: torch.Tensor) -> torch.Tensor:
-#     return torch.clamp(1 - pos + neg, min=0).mean()
-
-# for epoch in range(config["epochs"]):
-#     model.train()
-#     total_loss = 0
-
-#     for batch in Tqdm.tqdm(loader):
-#         query = batch["query_tokens"]
-#         doc_pos = batch["doc_pos_tokens"]
-#         doc_neg = batch["doc_neg_tokens"]
-
-#         optimizer.zero_grad()
-
-#         print("\033[92m", "REACHED OUTER 0", "\033[0m")
-#         pos = model(query, doc_pos)
-#         print("\033[92m", "REACHED OUTER 1", "\033[0m")
-#         neg = model(query, doc_neg)
-#         print("\033[92m", "REACHED OUTER 2", "\033[0m")
-#         loss = hinge_loss(pos, neg)
-
-#         loss.backward()
-#         optimizer.step()
-
-#         total_loss += loss.item()
-    
-#     print(f"epoch {epoch} loss: {total_loss}")
-
-
-# exit(0)
-
-
-# """
-# eval
-# """
-
-# # duplicate for validation inside train loop - but rename "loader",
-# # otherwise it will overwrite the original train iterator, which is instantiated outside the loop
-# _tuple_reader = IrLabeledTupleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
-# _tuple_reader = _tuple_reader.read(config["test_data"])
-# _tuple_reader.index_with(vocab)
-# loader = PyTorchDataLoader(_tuple_reader, batch_size=128)
-
-# for batch in Tqdm.tqdm(loader):
-#     # TODO: test loop
-#     # TODO: evaluation
-#     pass
-
-# endregion main
-
-
-
-
-
-
-
-# change paths to your data directory
-config = {
-    "vocab_directory": "../Part-2/allen_vocab_lower_10",
-    "pre_trained_embedding": "../Part-2/glove.42B.300d.txt",
-    "train_data": "../Part-2/triples.train.tsv",
-    "validation_data": "../Part-2/msmarco_tuples.validation.tsv",
-    "eval": "../Part-2/msmarco_qrels.txt",
-    "reranking": {
-        "input": "../Part-2/msmarco_tuples.test.tsv",
-        "eval": "../Part-2/msmarco_qrels.txt",
-        "suffix": "reranking.txt"
-    },
-    "baseline": {
-        "input": "../Part-2/fira-22.tuples.tsv",
-        "eval": "../Part-1/fira-22.baseline-qrels.tsv",
-        "suffix": "baseline.txt"
-    },
-    "ds": {
-        "input": "../Part-2/fira-22.tuples.tsv",
-        "eval": "../result_ds.csv",
-        "suffix": "ds.txt"
-    },
-    "model_export_path": "../Part-2/<tmp>_model.pth", # replace <tmp> with model name
-    "results_export_path": "../Part-2/<tmp>_model_<sffx>", # replace <tmp> with model name and <sffx> with suffix
-}
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-mode = "eval"  # Change to eval/train depending on the desired mode
-model = "tk"  # Change to knrm/tk depending on the desired model
-evaluation_data = "baseline"  # Change between baseline/ds/reranking to evaluate different data sets
-
-eval_step_size = 50  # After how many batched the model should be evaluated. Only relevant in training phase.
-
-
-
-
-base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-2"
+base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2"
 base_out = Path.cwd() / "output"
 
 config = {
     # settings
+    "mode": "train", # 'train', 'eval'
     "model": "knrm", # 'knrm', 'tk'
+    "eval_data": "baseline", # 'baseline', 'ds', 'reranking'
     "epochs": 10, # int [1;]
-    "mode": "train", # 'train', 'eval
+    "eval_step_size": 50, # int [1;] - only relevant in training phase, steps after which the model should be evaluated
 
     # paths
-    "vocab_directory": base_in / "allen_vocab_lower_10",
-    "pre_trained_embedding": base_in / "glove.42B.300d.txt",
-    "train_data": base_in / "triples.train.tsv",
-    "validation_data": base_in / "msmarco_tuples.validation.tsv",
+    "vocab_directory": base_in / "Part-2" / "allen_vocab_lower_10",
+    "pre_trained_embedding": base_in / "Part-2" / "glove.42B.300d.txt",
+    "train_data": base_in / "Part-2" / "triples.train.tsv",
+    "validation_data": base_in / "Part-2" / "msmarco_tuples.validation.tsv",
+    "eval": base_in / "Part-2" / "msmarco_qrels.txt",
+
+    "reranking": { # evaluate based on reranking
+        "input": base_in / "Part-2" / "msmarco_tuples.test.tsv",
+        "eval": base_in / "Part-2" / "msmarco_qrels.txt",
+    },
+
+    "baseline": { # evaluate based on baseline
+        "input": base_in / "Part-2" / "fira-22.tuples.tsv",
+        "eval": base_in / "Part-1" / "fira-22.baseline-qrels.tsv",
+    },
     
-    "test_data": base_in / "msmarco_tuples.test.tsv",
+    "ds": { # evaluate based on deepscore
+        "input": "../Part-2/fira-22.tuples.tsv",
+        "eval": "../result_ds.csv",
+    },
 }
+
+model_export_path = base_out / f"{config['model']}_model.pth"
+results_export_path = base_out / f"{config['model']}_model_{config['eval_data']}.txt"
 
 
 assert Path(config["vocab_directory"]).exists()
