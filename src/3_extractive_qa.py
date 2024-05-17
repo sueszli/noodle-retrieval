@@ -31,6 +31,7 @@ def parse_answers(answers_path: Path) -> pd.DataFrame:
 
 answers: pd.DataFrame = parse_answers(answers_path)
 
+# ... same for tuples and retrieval
+
 # tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-distilled-squad")
 # model = AutoModelForQuestionAnswering.from_pretrained("distilbert-base-uncased-distilled-squad")
-jet

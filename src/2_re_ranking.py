@@ -22,11 +22,16 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
+from torch.optim import lr_scheduler
+from torch.nn.modules.loss import MarginRankingLoss
+from torch.optim import Adam
 
 from overrides import overrides
 from blingfire import text_to_words
 
 from pathlib import Path
+import pandas as pd
+import numpy as np
 from typing import Dict, Iterator, List
 import logging
 import sys
@@ -395,29 +400,27 @@ config = {
     "epochs": 10, # int [1;]
     "eval_step_size": 50, # int [1;] - only relevant in training phase, steps after which the model should be evaluated
 
-    # paths
+    # train paths
     "vocab_directory": base_in / "Part-2" / "allen_vocab_lower_10",
     "pre_trained_embedding": base_in / "Part-2" / "glove.42B.300d.txt",
     "train_data": base_in / "Part-2" / "triples.train.tsv",
     "validation_data": base_in / "Part-2" / "msmarco_tuples.validation.tsv",
     "eval": base_in / "Part-2" / "msmarco_qrels.txt",
 
-    "reranking": { # evaluate based on reranking
+    # eval paths
+    "reranking": {
         "input": base_in / "Part-2" / "msmarco_tuples.test.tsv",
         "eval": base_in / "Part-2" / "msmarco_qrels.txt",
     },
-
-    "baseline": { # evaluate based on baseline judgement
+    "baseline": {
         "input": base_in / "Part-2" / "fira-22.tuples.tsv",
         "eval": base_in / "Part-1" / "fira-22.baseline-qrels.tsv",
     },
-    
-    "ds": { # evaluate based on our own judgement
+    "ds": {
         "input": base_in / "Part-2" / "fira-22.tuples.tsv",
         "eval": base_out / "fira-22.qrels.tsv",
     },
 }
-
 model_export_path = base_out / f"{config['model']}_model.pth"
 results_export_path = base_out / f"{config['model']}_model_{config['eval_data']}.txt"
 
@@ -436,11 +439,6 @@ assert Path(config["ds"]["eval"]).exists()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # no mps in torch==1.6.0
 print(f"device: {device}")
 
-
-"""
-load data, define model
-"""
-
 # get words that occur at least 10 times
 vocab = Vocabulary.from_files(config["vocab_directory"])
 
@@ -448,16 +446,18 @@ vocab = Vocabulary.from_files(config["vocab_directory"])
 tokens_embedder = Embedding(vocab=vocab, pretrained_file=str(config["pre_trained_embedding"]), embedding_dim=300, trainable=True, padding_index=0)
 word_embedder = BasicTextFieldEmbedder({"tokens": tokens_embedder})
 
-# define model
 if config["model"] == "knrm":
     model = KNRM(word_embedder, n_kernels=11).to(device)
 elif config["model"] == "tk":
     model = TK(word_embedder, n_kernels=11, n_layers=2, n_tf_dim=300, n_tf_heads=10).to(device)
 
+criterion = nn.MarginRankingLoss(margin=1, reduction="mean").to(device)
+optimizer = Adam(model.parameters(), lr=0.001)
+lr_reducer = lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, factor=0.5)
+
 print("model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 print("network:", model)
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 """
 train
@@ -466,133 +466,7 @@ train
 if config["mode"] != "train":
     sys.exit()
 
-train_loader = IrTripleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
-train_loader = train_loader.read(config["train_data"])
-train_loader.index_with(vocab)
-loader = PyTorchDataLoader(train_loader, batch_size=32)
-
-def hinge_loss(pos: torch.Tensor, neg: torch.Tensor) -> torch.Tensor:
-    return torch.clamp(1 - pos + neg, min=0).mean()
-
-for epoch in range(config["epochs"]):
-    model.train()
-    total_loss = 0
-
-    for batch in Tqdm.tqdm(loader):
-        query = batch["query_tokens"]
-        doc_pos = batch["doc_pos_tokens"]
-        doc_neg = batch["doc_neg_tokens"]
-
-        optimizer.zero_grad()
-
-        pos = model(query, doc_pos)
-        neg = model(query, doc_neg)
-        loss = hinge_loss(pos, neg)
-
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-    
-    print(f"epoch {epoch} loss: {total_loss}")
-
-
-
-# # Training of model
-
-# # load training and evaluation data
-# train_loader = triple_loader(config["train_data"], vocab)
-# val_loader = tuple_loader(config["validation_data"], vocab)÷
-# qrels = load_qrels(config["eval"])
-
-# # initialize AdamW optimizer
-# optimizer = Adam(model.parameters(), lr=1e-4, eps=1e-5)
-
-# # Defining the loss function
-# criterion = MarginRankingLoss(margin=1, reduction='mean').to(device)
-# # lr_reducer = lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, factor=0.5)
-# print('Model', model, 'total parameters:', sum(p.numel() for p in model.parameters() if p.requires_grad))
-# print('Network:', model)
-
-# # train
-# training_results = []
-# best_score = 0
-
-
-# eval_step_size = 50  # After how many batched the model should be evaluated. Only relevant in training phase.
-
-
-# for epoch in range(num_epochs):
-#     metricEarlyStopper = EarlyStopper()
-#     losses = []
-
-#     # Looping through the training data
-#     for i, batch in enumerate(Tqdm.tqdm(train_loader)):
-
-#         # setting model to train mode.
-#         model.train()
-#         optimizer.zero_grad()
-
-#         batch = move_to_device(batch, device)
-
-#         # target is always 1 because we want to rank the first input (target_relevant_doc) higher
-#         current_batch_size = batch['query_tokens']['tokens']['tokens'].shape[0]
-#         target = torch.ones(current_batch_size, requires_grad=True).to(device)
-
-#         # forward: get output of model for relevant and un-relevant documents
-#         target_relevant_doc = model.forward(batch['query_tokens'], batch['doc_pos_tokens'])
-#         target_unrelevant_doc = model.forward(batch['query_tokens'], batch['doc_neg_tokens'])
-
-#         loss = criterion(target_relevant_doc, target_unrelevant_doc, target)
-
-#         loss.backward()
-#         print(f'EPOCH: {epoch}\tBATCH: {i}\tLOSS: {loss:.3f}')
-
-#         optimizer.step()
-#         losses.append(loss.item())
-
-#         # Validation
-#         if (i + 1) % eval_step_size == 0: # eval_setp_size is the number of batches after which the model is evaluated
-#             model.eval()
-#             results = {}
-#             print("starting to read validation data")
-
-#             for batch in Tqdm.tqdm(val_loader):
-#                 result = test_step(batch, model, device)
-#                 for query_id, document_rank in result.items():
-#                     if query_id in results.keys():
-#                         results[query_id].extend(document_rank)
-#                     else:
-#                         results[query_id] = document_rank
-
-#             ranked_results = unrolled_to_ranked_result(results)
-#             metrics = calculate_metrics_plain(ranked_results, qrels)
-#             model.train()
-#             metric = metrics["MRR@10"]
-#             print(f"metric is {metric}")
-
-#             # saving best model we have seen so far
-#             if metric > best_score:
-#                 best_score = metric
-#                 torch.save(model.state_dict(), config.get("model_export_path"))
-
-#             training_results.append(f"EPOCH: {epoch}\tBATCH: {i}\tLOSS: {loss:.3f}\t MRR@10: {metric}")
-
-#             # lr_reducer.step(metric)
-#             if metricEarlyStopper.early_stop(metric):
-#                 print("Metric early stopping triggered, exiting epoch")
-#                 break
-
-# # Export logs of epoch, iteration, loss and MRR metric
-# with open(r'logs.txt', 'w+') as fp:
-#     for item in training_results:
-#         # write each item on a new line
-#         fp.write("%s\n" % item)
-#     print('Done')
-
-
-
-
+# ...
 
 """
 eval
@@ -601,49 +475,4 @@ eval
 if config["mode"] != "eval":
     sys.exit()
 
-# duplicate for validation inside train loop - but rename "loader",
-# otherwise it will overwrite the original train iterator, which is instantiated outside the loop
-val_loader = IrLabeledTupleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
-val_loader = val_loader.read(config["validation_data"])
-val_loader.index_with(vocab)
-loader = PyTorchDataLoader(val_loader, batch_size=128)
-
-for batch in Tqdm.tqdm(loader):
-    # TODO: test loop
-    # TODO: evaluation
-    pass
-
-
-# test_loader = tuple_loader(config[evaluation_data]["input"], vocab)
-# qrels = load_qrels(config[evaluation_data]["eval"], evaluation_data == 'ds')
-
-# model.load_state_dict(torch.load(config.get("model_export_path"), map_location=device))
-# model.eval()
-# results = {}
-
-# print("Starting to read test data...")
-# for batch in Tqdm.tqdm(test_loader):
-#     result = test_step(batch, model, device)
-
-#     for query_id, document_rank in result.items():
-#         if query_id in results.keys():
-#             results[query_id].extend(document_rank)
-#         else:
-#             results[query_id] = document_rank
-
-# ranked_results = unrolled_to_ranked_result(results)
-
-# # if evaluation_data in ["ds", "baseline"]:
-# # metrics_ood = out_of_domain_eval(results, qrels)
-
-# metrics = calculate_metrics_plain(ranked_results, qrels)
-# metric = metrics["MRR@10"]
-
-# with open(config.get("results_export_path"), "w+") as outfile:
-#     for metric in metrics.keys():
-#         outfile.write(f"{metric}  :  {metrics.get(metric)}\n")
-# print(f"Metric is {metric}")
-# sys.exit()
-
-
-
+# ...
