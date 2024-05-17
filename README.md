@@ -16,6 +16,8 @@ run any of the provided shell scripts. they decompress the data and install the 
 
     not an option.
 
+    see: https://github.com/sebastian-hofstaetter/teaching/discussions/129 (this might be a solution, but i was not able to get it to work)
+
     see: https://github.com/googlecolab/colabtools/issues/4212#issuecomment-1856302948
 
     see: https://www.reddit.com/r/GoogleColab/comments/13605i3/comment/jinqaz3/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
