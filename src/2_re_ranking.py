@@ -526,6 +526,53 @@ class TK(nn.Module):
 # endregion models
 
 
+"""
+├── data-merged
+│   └── data
+│       ├── air-exercise-2
+│       │   ├── Part-1
+│       │   │   ├── fira-22.baseline-qrels.tsv
+│       │   │   ├── fira-22.documents.tsv
+│       │   │   ├── fira-22.judgements-anonymized.tsv
+│       │   │   └── fira-22.queries.tsv
+│       │   ├── Part-2
+│       │   │   ├── allen_vocab_lower_10
+│       │   │   │   ├── non_padded_namespaces.txt
+│       │   │   │   └── tokens.txt
+│       │   │   ├── allen_vocab_lower_5
+│       │   │   │   ├── non_padded_namespaces.txt
+│       │   │   │   └── tokens.txt
+│       │   │   ├── fira-22.tuples.tsv
+│       │   │   ├── glove.42B.300d.txt
+│       │   │   ├── msmarco_qrels.txt
+│       │   │   ├── msmarco_queries.test.tsv
+│       │   │   ├── msmarco_queries.validation.tsv
+│       │   │   ├── msmarco_tuples.test.tsv
+│       │   │   ├── msmarco_tuples.validation.tsv
+│       │   │   └── triples.train.tsv
+│       │   └── Part-3
+│       │       ├── msmarco-fira-21.qrels.qa-answers.tsv
+│       │       ├── msmarco-fira-21.qrels.qa-tuples.tsv
+│       │       └── msmarco-fira-21.qrels.retrieval.tsv
+│       ├── fira-22.documents.embeddings.tsv
+│       └── fira-22.queries.embeddings.tsv
+├── docker-compose.yml
+├── docs
+│   └── report.md
+├── output
+│   └── fira-22.qrels.tsv
+├── pyproject.toml
+├── run-conda.sh
+├── run-docker.sh
+└── src
+    ├── 1_gen_embeddings.py
+    ├── 1_judgement_aggregation.py
+    ├── 1_meta_judgement.ipynb
+    ├── 2_re_ranking.py
+    ├── 3_core_metrics.py
+    └── 3_extractive_qa.py
+"""
+
 base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2"
 base_out = Path.cwd() / "output"
 
@@ -549,20 +596,19 @@ config = {
         "eval": base_in / "Part-2" / "msmarco_qrels.txt",
     },
 
-    "baseline": { # evaluate based on baseline
+    "baseline": { # evaluate based on baseline judgement
         "input": base_in / "Part-2" / "fira-22.tuples.tsv",
         "eval": base_in / "Part-1" / "fira-22.baseline-qrels.tsv",
     },
     
-    "ds": { # evaluate based on deepscore
-        "input": "../Part-2/fira-22.tuples.tsv",
-        "eval": "../result_ds.csv",
+    "ds": { # evaluate based on our own judgement
+        "input": base_in / "Part-2" / "fira-22.tuples.tsv",
+        "eval": base_out / "fira-22.qrels.tsv",
     },
 }
 
 model_export_path = base_out / f"{config['model']}_model.pth"
 results_export_path = base_out / f"{config['model']}_model_{config['eval_data']}.txt"
-
 
 assert Path(config["vocab_directory"]).exists()
 assert Path(config["pre_trained_embedding"]).exists()
@@ -572,6 +618,7 @@ assert Path(config["test_data"]).exists()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # no mps in torch==1.6.0
 print(f"device: {device}")
+
 
 """
 load data, define model
@@ -589,10 +636,11 @@ if config["model"] == "knrm":
     model = KNRM(word_embedder, n_kernels=11).to(device)
 elif config["model"] == "tk":
     model = TK(word_embedder, n_kernels=11, n_layers=2, n_tf_dim=300, n_tf_heads=10).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
 print("model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 print("network:", model)
 
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 """
 train
@@ -601,10 +649,10 @@ train
 if config["mode"] != "train":
     sys.exit()
 
-_triple_reader = IrTripleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
-_triple_reader = _triple_reader.read(config["train_data"])
-_triple_reader.index_with(vocab)
-loader = PyTorchDataLoader(_triple_reader, batch_size=32)
+train_loader = IrTripleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
+train_loader = train_loader.read(config["train_data"])
+train_loader.index_with(vocab)
+loader = PyTorchDataLoader(train_loader, batch_size=32)
 
 def hinge_loss(pos: torch.Tensor, neg: torch.Tensor) -> torch.Tensor:
     return torch.clamp(1 - pos + neg, min=0).mean()
@@ -637,7 +685,7 @@ for epoch in range(config["epochs"]):
 
 # # load training and evaluation data
 # train_loader = triple_loader(config["train_data"], vocab)
-# val_loader = tuple_loader(config["validation_data"], vocab)
+# val_loader = tuple_loader(config["validation_data"], vocab)÷
 # qrels = load_qrels(config["eval"])
 
 # # initialize AdamW optimizer
@@ -738,10 +786,10 @@ if config["mode"] != "eval":
 
 # duplicate for validation inside train loop - but rename "loader",
 # otherwise it will overwrite the original train iterator, which is instantiated outside the loop
-_tuple_reader = IrLabeledTupleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
-_tuple_reader = _tuple_reader.read(config["test_data"])
-_tuple_reader.index_with(vocab)
-loader = PyTorchDataLoader(_tuple_reader, batch_size=128)
+val_loader = IrLabeledTupleDatasetReader(lazy=True, max_doc_length=180, max_query_length=30)
+val_loader = val_loader.read(config["validation_data"])
+val_loader.index_with(vocab)
+loader = PyTorchDataLoader(val_loader, batch_size=128)
 
 for batch in Tqdm.tqdm(loader):
     # TODO: test loop
