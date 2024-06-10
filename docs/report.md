@@ -72,6 +72,8 @@ The origin of the data is unknown.
 
     Format: `query_id, query_text, query_embedding`
 
+FiRa data source: Fine-Grained Relevance Annotations for Multi-Task Document Ranking and Question Answering In Proc. of CIKM 2020
+
 ## Algorithm
 
 We want to increase the quality of the baseline solution.
