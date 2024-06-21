@@ -5,7 +5,7 @@ Other solutions: https://github.com/orgs/tuwien-information-retrieval/repositori
 Contributors:
 
 -   Yahya Jabary - 11912007
--   Maximilian Höller - ???
+-   Maximilian Höller - 52004266
 -   Miran Mamsaleh - ???
 
 # Part 1 - Test Collection Preparation
@@ -245,6 +245,22 @@ See: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672
     Example: `135386 0 100163 3`
 
     Format: `queryid, 0, documentid, relevance-grade`
+
+## Process
+
+The first problem encountered was, that running a model from hugging face on a local CPU is infeasible. This is why we had to buy 100 computation units for Google Collab, since this is unfortunately not for free anymore. Once that was figured out, we ran the deepset/roberta-base-squad2 model on all 52.000 instances which took around five hours. 
+
+The results were evaluated to four digits as follows:
+
+Exact Match: 0.0866
+F1 Score: 0.3195
+Recall: 0.275
+Precision: 0.6249
+
+It is an average over the values for all around 50.000 values. If a token was in the predicted and in the gold answer, it was counted as true positive.
+
+Note: Only the first answer was evaluated.
+
 
 <br><br>
 
