@@ -1,5 +1,5 @@
 from allennlp.common import Params
-from allennlp.common import Tqdm # progress bar in loops
+from allennlp.common import Tqdm  # progress bar in loops
 from allennlp.common.util import prepare_environment
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.file_utils import cached_path
@@ -41,7 +41,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-#region file-reader
+# region file-reader
 
 
 class BlingFireTokenizer:
@@ -167,11 +167,10 @@ class IrLabeledTupleDatasetReader(DatasetReader):
 
 # region models
 
+
 class KNRM(nn.Module):
 
-    def __init__(self,
-                 word_embeddings: TextFieldEmbedder,
-                 n_kernels: int):
+    def __init__(self, word_embeddings: TextFieldEmbedder, n_kernels: int):
 
         super(KNRM, self).__init__()
 
@@ -181,11 +180,11 @@ class KNRM(nn.Module):
         mu = torch.FloatTensor(self.kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
         sigma = torch.FloatTensor(self.kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
 
-        self.register_buffer('mu', mu)
-        self.register_buffer('sigma', sigma)
+        self.register_buffer("mu", mu)
+        self.register_buffer("sigma", sigma)
         self.mu = mu
         self.sigma = sigma
-        #todo
+        # todo
 
         # defining the linear layer at the end of the training process to compute the targets
         # bias=true tells pytorch to learn the bias as well (w * X + b)
@@ -201,7 +200,7 @@ class KNRM(nn.Module):
         # -------------------------------------------------------
 
         # shape: (batch, query_max)
-        query_pad_oov_mask = (query["tokens"]["tokens"] > 0).float() # > 1 to also mask oov terms
+        query_pad_oov_mask = (query["tokens"]["tokens"] > 0).float()  # > 1 to also mask oov terms
         # shape: (batch, doc_max)
         document_pad_oov_mask = (document["tokens"]["tokens"] > 0).float()
 
@@ -218,13 +217,9 @@ class KNRM(nn.Module):
 
         # to compute the cosine similarity,
         # the embeddings of the query and the documents are normalized with the L2 norm
-        query_embeddings_normalized = query_embeddings / (
-            query_embeddings.norm(p=2, dim=-1, keepdim=True) + 1e-13
-        )
-        document_embeddings_normalized = document_embeddings / (
-                document_embeddings.norm(p=2, dim=-1, keepdim=True) + 1e-13
-        )
-        
+        query_embeddings_normalized = query_embeddings / (query_embeddings.norm(p=2, dim=-1, keepdim=True) + 1e-13)
+        document_embeddings_normalized = document_embeddings / (document_embeddings.norm(p=2, dim=-1, keepdim=True) + 1e-13)
+
         # Calculate translation matrix (M): now normalized embedding are multiplied element wise and added together.
         # This is done via the matrix-multiplication if the normalized query and document embedding
         # shape (batch_size, query_max, document_max, 1): for each batch, each element in the matrix
@@ -237,7 +232,7 @@ class KNRM(nn.Module):
         # an example to further explain what happens: when accessing kernel_results[b, r, c, k], one would access the
         # result of the k-th kernel, applied to the c-th column of the r-th row of batch b.
         # shape of result: (batch_size, query_max, doc_max, kernel_size)
-        kernel_results = torch.exp(-1/2 * torch.pow((translation_matrix - self.mu)/(self.sigma), 2))
+        kernel_results = torch.exp(-1 / 2 * torch.pow((translation_matrix - self.mu) / (self.sigma), 2))
 
         # Now the results of the kernel is masked. The kernel mask is expanded with an additional dimension.
         # The 4th dimension is either 0 or 1 which represents if the kernel results should be kept or not.
@@ -247,7 +242,6 @@ class KNRM(nn.Module):
         # To prevent this influence on our output, the results are masked.
         kernel_results = kernel_results * kernel_mask.unsqueeze(-1)
 
-        
         # Soft-TF features - Phi
         # Now, the kernel results of every column for every row are summed together, yielding a trensor of
         # shape (batch_size, query_max, kernel_size)
@@ -264,7 +258,7 @@ class KNRM(nn.Module):
         log_per_kernel_query = log_per_kernel_query * query_pad_oov_mask.unsqueeze(-1)
 
         # sum up kernels. Phi now is the k-dimensional feature vector described in the paper
-        phi = torch.sum(log_per_kernel_query, 1) 
+        phi = torch.sum(log_per_kernel_query, 1)
 
         # calculate ranking score via tanh(w * Phi + b)
         # where w * Phi + b is done by nn.Linear()
@@ -309,16 +303,11 @@ class KNRM(nn.Module):
 
 
 class TK(nn.Module):
-    '''
-    Paper: S. Hofstätter, M. Zlabinger, and A. Hanbury 2020. Interpretable & Time-Budget-Constrained Contextualization for Re-Ranking. In Proc. of ECAI 
-    '''
+    """
+    Paper: S. Hofstätter, M. Zlabinger, and A. Hanbury 2020. Interpretable & Time-Budget-Constrained Contextualization for Re-Ranking. In Proc. of ECAI
+    """
 
-    def __init__(self,
-                 word_embeddings: TextFieldEmbedder,
-                 n_kernels: int,
-                 n_layers:int,
-                 n_tf_dim:int,
-                 n_tf_heads:int):
+    def __init__(self, word_embeddings: TextFieldEmbedder, n_kernels: int, n_layers: int, n_tf_dim: int, n_tf_heads: int):
 
         super(TK, self).__init__()
 
@@ -328,10 +317,15 @@ class TK(nn.Module):
         mu = torch.FloatTensor(self.kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
         sigma = torch.FloatTensor(self.kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
 
-        self.register_buffer('mu', mu)
-        self.register_buffer('sigma', sigma)
+        self.register_buffer("mu", mu)
+        self.register_buffer("sigma", sigma)
 
-        #todo
+        # Transformer layers
+        encoder_layer = nn.TransformerEncoderLayer(d_model=n_tf_dim, nhead=n_tf_heads)
+        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
+
+        # Final linear layer
+        self.linear = nn.Linear(n_tf_dim, 1)
 
     def forward(self, query: Dict[str, torch.Tensor], document: Dict[str, torch.Tensor]) -> torch.Tensor:
         # pylint: disable=arguments-differ
@@ -341,7 +335,7 @@ class TK(nn.Module):
         # -------------------------------------------------------
 
         # shape: (batch, query_max)
-        query_pad_oov_mask = (query["tokens"]["tokens"] > 0).float() # > 1 to also mask oov terms
+        query_pad_oov_mask = (query["tokens"]["tokens"] > 0).float()  # > 1 to also mask oov terms
         # shape: (batch, doc_max)
         document_pad_oov_mask = (document["tokens"]["tokens"] > 0).float()
 
@@ -350,8 +344,22 @@ class TK(nn.Module):
         # shape: (batch, document_max,emb_dim)
         document_embeddings = self.word_embeddings(document)
 
-        #todo
-        output = torch.rand(1,1)
+        query_embeddings_normalized = query_embeddings / (query_embeddings.norm(p=2, dim=-1, keepdim=True) + 1e-13)
+        document_embeddings_normalized = document_embeddings / (document_embeddings.norm(p=2, dim=-1, keepdim=True) + 1e-13)
+
+        translation_matrix = torch.bmm(query_embeddings_normalized, document_embeddings_normalized.transpose(-1, -2)).unsqueeze(-1)
+
+        kernel_results = torch.exp(-1 / 2 * torch.pow((translation_matrix - self.mu) / (self.sigma), 2))
+        kernel_mask = torch.bmm(query_pad_oov_mask.unsqueeze(-1), document_pad_oov_mask.unsqueeze(-1).transpose(1, 2))
+        kernel_results = kernel_results * kernel_mask.unsqueeze(-1)
+
+        per_kernel_query = torch.sum(kernel_results, 2)
+        log_per_kernel_query = torch.log(torch.clamp(per_kernel_query, min=1e-10)) * 0.01
+        log_per_kernel_query = log_per_kernel_query * query_pad_oov_mask.unsqueeze(-1)
+
+        phi = torch.sum(log_per_kernel_query, 1)
+
+        output = torch.rand(1, 1)
         return output
 
     def kernel_mus(self, n_kernels: int):
@@ -386,6 +394,7 @@ class TK(nn.Module):
         l_sigma += [0.5 * bin_size] * (n_kernels - 1)
         return l_sigma
 
+
 # endregion models
 
 
@@ -394,19 +403,17 @@ base_out = Path.cwd() / "output"
 
 config = {
     # settings
-    "mode": "train", # 'train', 'eval'
-    "model": "knrm", # 'knrm', 'tk'
-    "eval_data": "baseline", # 'baseline', 'ds', 'reranking'
-    "epochs": 10, # int [1;]
-    "eval_step_size": 50, # int [1;] - only relevant in training phase, steps after which the model should be evaluated
-
+    "mode": "train",  # 'train', 'eval'
+    "model": "tk",  # 'knrm', 'tk'
+    "eval_data": "baseline",  # 'baseline', 'ds', 'reranking'
+    "epochs": 10,  # int [1;]
+    "eval_step_size": 50,  # int [1;] - only relevant in training phase, steps after which the model should be evaluated
     # train paths
     "vocab_directory": base_in / "Part-2" / "allen_vocab_lower_10",
     "pre_trained_embedding": base_in / "Part-2" / "glove.42B.300d.txt",
     "train_data": base_in / "Part-2" / "triples.train.tsv",
     "validation_data": base_in / "Part-2" / "msmarco_tuples.validation.tsv",
     "eval": base_in / "Part-2" / "msmarco_qrels.txt",
-
     # eval paths
     "reranking": {
         "input": base_in / "Part-2" / "msmarco_tuples.test.tsv",
@@ -436,7 +443,7 @@ assert Path(config["baseline"]["eval"]).exists()
 assert Path(config["ds"]["input"]).exists()
 assert Path(config["ds"]["eval"]).exists()
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu") # no mps in torch==1.6.0
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")  # no mps in torch==1.6.0
 print(f"device: {device}")
 
 # get words that occur at least 10 times
@@ -459,20 +466,93 @@ print("model", config["model"], "total parameters:", sum(p.numel() for p in mode
 print("network:", model)
 
 
-"""
-train
-"""
+def train_model(model, train_loader, val_loader, criterion, optimizer, lr_scheduler, num_epochs=10, early_stopping_patience=3):
+    best_val_loss = float("inf")
+    patience_counter = 0
 
-if config["mode"] != "train":
-    sys.exit()
+    for epoch in range(num_epochs):
+        model.train()
+        for batch in train_loader:
+            optimizer.zero_grad()
+            query, document, labels = batch["query_tokens"], batch["doc_pos_tokens"], batch["doc_neg_tokens"]
+            outputs = model(query, document)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+        val_loss = evaluate_model(model, val_loader, criterion)
+        print(f"Epoch {epoch+1}, Validation Loss: {val_loss}")
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            patience_counter = 0
+            torch.save(model.state_dict(), model_export_path)
+        else:
+            patience_counter += 1
+            if patience_counter >= early_stopping_patience:
+                print("Early stopping triggered")
+                break
+
+        lr_scheduler.step(val_loss)
+
+
+def evaluate_model(model, data_loader, criterion):
+    model.eval()
+    total_loss = 0
+    with torch.no_grad():
+        for batch in data_loader:
+            query, document, labels = batch["query_tokens"], batch["doc_pos_tokens"], batch["doc_neg_tokens"]
+            outputs = model(query, document)
+            loss = criterion(outputs, labels)
+            total_loss += loss.item()
+    return total_loss / len(data_loader)
+
+
+if config["mode"] == "train":
+    train_dataset_reader = IrTripleDatasetReader()
+    train_dataset = train_dataset_reader.read(config["train_data"])
+    train_loader = PyTorchDataLoader(train_dataset, batch_size=32, shuffle=True)
+
+    val_dataset_reader = IrLabeledTupleDatasetReader()
+    val_dataset = val_dataset_reader.read(config["validation_data"])
+    val_loader = PyTorchDataLoader(val_dataset, batch_size=32, shuffle=False)
+
+    train_model(model, train_loader, val_loader, criterion, optimizer, lr_reducer, num_epochs=config["epochs"], early_stopping_patience=3)
 
 # ...
 
-"""
-eval
-"""
 
-if config["mode"] != "eval":
-    sys.exit()
+def compute_mrr(ranked_list, ground_truth):
+    for rank, doc_id in enumerate(ranked_list, 1):
+        if doc_id in ground_truth:
+            return 1 / rank
+    return 0
+
+
+def evaluate_ranking_model(model, test_loader):
+    model.eval()
+    mrr_total = 0
+    num_queries = 0
+
+    with torch.no_grad():
+        for batch in test_loader:
+            query, document, labels = batch["query_tokens"], batch["doc_tokens"], batch["doc_labels"]
+            outputs = model(query, document)
+            ranked_list = outputs.argsort(descending=True).tolist()
+            ground_truth = labels.nonzero(as_tuple=True)[0].tolist()
+            mrr_total += compute_mrr(ranked_list, ground_truth)
+            num_queries += 1
+
+    return mrr_total / num_queries
+
+
+if config["mode"] == "eval":
+    test_dataset_reader = IrLabeledTupleDatasetReader()
+    test_dataset = test_dataset_reader.read(config[config["eval_data"]]["input"])
+    test_loader = PyTorchDataLoader(test_dataset, batch_size=32, shuffle=False)
+
+    model.load_state_dict(torch.load(model_export_path))
+    mrr_score = evaluate_ranking_model(model, test_loader)
+    print(f"MRR@10: {mrr_score}")
 
 # ...
