@@ -13,7 +13,7 @@ env PYTHONPATH= '/content/drive/MyDrive/air-2023-group24/Miniconda/bin/python
 
 ! echo $PYTHONPATH
 
-#Add miniconda to the system PATH:
+# Add miniconda to the system PATH:
 
 import sys
 sys.path.append('/content/drive/MyDrive/air-2023-group24/Miniconda/lib/python3.7/site-packages/')
