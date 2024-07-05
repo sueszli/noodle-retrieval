@@ -42,16 +42,17 @@ conda create --yes --name noodle-retrieval python=3.6.12 anaconda
 conda activate noodle-retrieval
 
 # setuptools requirements (order matters)
-pip install 'pyqtwebengine<5.13'
 pip install 'pyqt5<5.13'
 pip install pyls-black
+pip install 'pyqtwebengine<5.13'
 pip install --no-deps ruamel.yaml # kind of a hack
 
 # allennlp requirements (order matters)
 pip install --upgrade pip
 pip install --upgrade setuptools
 pip install --upgrade wheel
-pip install --upgrade Cython
+pip install --upgrade thinc
+pip install Cython==0.29.36
 pip install think --no-build-isolation
 pip install spacy --no-build-isolation
 pip install jsonnet --no-build-isolation
@@ -66,7 +67,11 @@ pip install overrides
 
 # convenience
 pip install black isort flake8 mypy
-pip install numpy pandas matplotlib seaborn
+pip install numpy pandas
+pip install matplotlib seaborn
+
+# store environment just in case (can be reproduced with conda env create -f conda_env.yml)
+conda env export > conda_env.yml
 
 # ----------------------------------------------------------------------------- stop
 conda deactivate

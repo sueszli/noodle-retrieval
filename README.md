@@ -8,7 +8,9 @@ run any of the provided shell scripts. they decompress the data and install the 
 
 -   docker:
 
-    works well - unless you want to use the latest stable vscode version as of may 2024.
+    works great, but using a gpu is more complicated.
+    
+    you won't have access to your vscode plugins as of may 2024.
 
     see: https://github.com/microsoft/vscode/issues/174632
 
