@@ -252,10 +252,12 @@ The first problem encountered was, that running a model from hugging face on a l
 
 The results were evaluated to four digits as follows:
 
+```
 Exact Match: 0.0866
 F1 Score: 0.3195
 Recall: 0.275
 Precision: 0.6249
+```
 
 It is an average over the values for all around 50.000 values. If a token was in the predicted and in the gold answer, it was counted as true positive.
 
