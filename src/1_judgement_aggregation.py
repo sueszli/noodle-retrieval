@@ -1,9 +1,9 @@
-import pandas as pd
-import numpy as np
-import torch
-from torch.nn.functional import cosine_similarity
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
+import torch
+from torch.nn.functional import cosine_similarity
 
 base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-1"
 base_in_prev = Path.cwd() / "data-merged" / "data"  # output of previous script

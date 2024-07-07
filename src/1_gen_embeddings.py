@@ -1,9 +1,9 @@
 from pathlib import Path
-import pandas as pd
-import numpy as np
-from transformers import AutoTokenizer, AutoModel
-import torch
 from typing import List
+
+import pandas as pd
+import torch
+from transformers import AutoModel, AutoTokenizer
 
 """
 generate embeddings of documents and queries for judgement aggregation

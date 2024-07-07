@@ -3,11 +3,12 @@
 # ------------------------------------------------------------
 #
 
-import sys
-import numpy as np
 import re
 import string
+import sys
 from collections import Counter
+
+import numpy as np
 
 global_metric_config = {
     "MRR+Recall@": [10, 20, 1000],  # multiple allowed
@@ -55,7 +56,6 @@ def calculate_metrics_plain(ranking, qrels, binarization_point=1.0, return_per_q
 
             # check if we have a relevant document at all in the results -> if not skip and leave 0
             if np.any(binary_relevant_mask):
-
                 # now select the relevant ranks across the fixed ranks
                 ranks = np.arange(1, binary_relevant_mask.shape[0] + 1)[binary_relevant_mask]
 
@@ -71,7 +71,6 @@ def calculate_metrics_plain(ranking, qrels, binarization_point=1.0, return_per_q
                 first_rank = ranks[0]
 
                 for cut_indx, cutoff in enumerate(global_metric_config["MRR+Recall@"]):
-
                     curr_ranks = ranks.copy()
                     curr_ranks[curr_ranks > cutoff] = 0
 
@@ -88,7 +87,6 @@ def calculate_metrics_plain(ranking, qrels, binarization_point=1.0, return_per_q
                         rank_per_candidate_depth[cut_indx, query_index] = first_rank
 
             if np.any(relevant_mask):
-
                 # now select the relevant ranks across the fixed ranks
                 ranks = np.arange(1, relevant_mask.shape[0] + 1)[relevant_mask]
 
@@ -229,6 +227,7 @@ def compute_f1(a_gold, a_pred):
     f1 = (2 * precision * recall) / (precision + recall)
     return f1
 
+
 def compute_precision(a_gold, a_pred):
     gold_toks = get_tokens(a_gold)
     pred_toks = get_tokens(a_pred)
@@ -242,6 +241,7 @@ def compute_precision(a_gold, a_pred):
     precision = 1.0 * num_same / len(pred_toks)
     return precision
 
+
 def compute_recall(a_gold, a_pred):
     gold_toks = get_tokens(a_gold)
     pred_toks = get_tokens(a_pred)
@@ -254,7 +254,6 @@ def compute_recall(a_gold, a_pred):
         return 0
     recall = 1.0 * num_same / len(gold_toks)
     return recall
-
 
 
 #

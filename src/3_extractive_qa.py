@@ -1,19 +1,20 @@
-import pandas as pd
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering
-from tqdm import tqdm # shows progress
 from pathlib import Path
-import torch
 
+import pandas as pd
+import torch
+from tqdm import tqdm  # shows progress
+from transformers import AutoModelForQuestionAnswering, AutoTokenizer
 
 base = Path.cwd() / "data-merged" / "data" / "air-exercise-2" / "Part-3"
 answers_path = base / "msmarco-fira-21.qrels.qa-answers.tsv"
-tuples_path  = base / "msmarco-fira-21.qrels.qa-tuples.tsv"
+tuples_path = base / "msmarco-fira-21.qrels.qa-tuples.tsv"
 retrieval_path = base / "msmarco-fira-21.qrels.retrieval.tsv"
 
 """
 manual parsing because pandas.read_csv() does not work.
 content needs to be cleaned and has an inconsistent number of columns.
 """
+
 
 def parse_answers(answers_path: Path) -> pd.DataFrame:
     answers: pd.DataFrame = pd.DataFrame(columns=["queryid", "documentid", "relevance-grade", "text-selection"])
@@ -28,9 +29,10 @@ def parse_answers(answers_path: Path) -> pd.DataFrame:
     answers_f.close()
     return answers
 
+
 def parse_tuples(tuples_path: Path) -> pd.DataFrame:
     tuples = pd.DataFrame(columns=["queryid", "documentid", "relevance-grade", "question", "context", "text-selection"])
-    
+
     with open(tuples_path, "r") as tuples_f:
         for line_count, line in enumerate(tqdm(tuples_f.readlines()), 1):
             if line_count > 10:
@@ -42,15 +44,8 @@ def parse_tuples(tuples_path: Path) -> pd.DataFrame:
             question = split_line[3]
             context = split_line[4]
             text_selection = "\t".join(split_line[5:]).strip()
-            tuples = tuples.append({
-                "queryid": qid, 
-                "documentid": docid, 
-                "relevance-grade": rel_grade, 
-                "question": question, 
-                "context": context,
-                "text-selection": text_selection
-            }, ignore_index=True)
-    
+            tuples = tuples.append({"queryid": qid, "documentid": docid, "relevance-grade": rel_grade, "question": question, "context": context, "text-selection": text_selection}, ignore_index=True)
+
     return tuples
 
 
@@ -58,23 +53,22 @@ tuples = parse_tuples(tuples_path)
 print("tuples parsed")
 
 
-model_name = 'distilbert-base-uncased-distilled-squad'
+model_name = "distilbert-base-uncased-distilled-squad"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForQuestionAnswering.from_pretrained(model_name)
 print("model downloaded")
 
-inputs0 = tokenizer(tuples['question'][0], tuples['context'][0], return_tensors="pt")
+inputs0 = tokenizer(tuples["question"][0], tuples["context"][0], return_tensors="pt")
 print("input tokenized")
 output0 = model(**inputs0)
 print("model called successfully")
 
 
-
 answer_start_idx = torch.argmax(output0.start_logits)
 answer_end_idx = torch.argmax(output0.end_logits)
 
-answer_tokens = inputs0.input_ids[0, answer_start_idx: answer_end_idx + 1]
+answer_tokens = inputs0.input_ids[0, answer_start_idx : answer_end_idx + 1]
 
 answer = tokenizer.decode(answer_tokens)
 
-print("ques: {}\nanswer: {}".format(tuples['question'][0], answer))
+print("ques: {}\nanswer: {}".format(tuples["question"][0], answer))

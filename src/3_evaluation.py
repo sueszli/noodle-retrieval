@@ -1,19 +1,22 @@
-import pandas as pd
-import sys
-import numpy as np
-from pathlib import Path
 import csv
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
 
 # Import functions from 3_core_metrics.py
-from core_metrics import normalize_answer, get_tokens, compute_exact, compute_f1, load_qrels, compute_precision, compute_recall
+from core_metrics import compute_exact, compute_f1, compute_precision, compute_recall
+
 
 def read_csv_manual(file_path):
     data = []
-    with open(file_path, mode='r', encoding='utf-8') as file:
+    with open(file_path, mode="r", encoding="utf-8") as file:
         reader = csv.DictReader(file)
         for row in reader:
             data.append(row)
     return pd.DataFrame(data)
+
 
 def evaluate_qa_results(result_path):
     # Load the results
@@ -30,8 +33,8 @@ def evaluate_qa_results(result_path):
 
     # Evaluate each result
     for i, row in results_df.iterrows():
-        predicted_answer = row['output']
-        gold_answer = row['text-selection']
+        predicted_answer = row["output"]
+        gold_answer = row["text-selection"]
 
         # Compute exact match and F1 scores
         exact_match = compute_exact(gold_answer, predicted_answer)
@@ -56,7 +59,6 @@ def evaluate_qa_results(result_path):
     print(f"Precision: {avg_precision_score:.4f}")
 
 
-
 if __name__ == "__main__":
     if len(sys.argv) == 2:
         result_path = Path(sys.argv[1])
@@ -68,4 +70,3 @@ if __name__ == "__main__":
             evaluate_qa_results(result_path)
     else:
         print("Usage: python evaluate_results.py <result.csv>")
-
