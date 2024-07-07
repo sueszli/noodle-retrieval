@@ -5,11 +5,11 @@ from typing import Dict, List
 
 import torch
 import torch.nn as nn
-from allennlp.common import Tqdm  # progress bar in loops
-from allennlp.common import Params
+from allennlp.common import Params, Tqdm
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.file_utils import cached_path
 from allennlp.common.util import prepare_environment
+from allennlp.data.dataloader import PyTorchDataLoader
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.fields import MetadataField, TextField
 from allennlp.data.instance import Instance
@@ -19,85 +19,17 @@ from allennlp.data.tokenizers.token import Token
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder, TextFieldEmbedder
 from allennlp.modules.token_embedders import Embedding
+from allennlp.nn.util import move_to_device
 from blingfire import text_to_words
 from overrides import overrides
+from torch.nn import MarginRankingLoss
 from torch.optim import Adam, lr_scheduler
 
-prepare_environment(Params({}))  # seed
+from core_metrics import calculate_metrics_plain, load_qrels, unrolled_to_ranked_result
+
+prepare_environment(Params({}))
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-from allennlp.common import Params
-from allennlp.common.util import prepare_environment
-from allennlp.data.dataloader import PyTorchDataLoader
-from allennlp.nn.util import move_to_device
-
-
-from typing import Dict, List
-import logging
-
-from overrides import overrides
-from blingfire import *
-
-from allennlp.common.checks import ConfigurationError
-from allennlp.common.file_utils import cached_path
-from allennlp.data.dataset_readers.dataset_reader import DatasetReader
-from allennlp.data.fields import TextField, MetadataField
-from allennlp.data.instance import Instance
-from allennlp.data.tokenizers import Tokenizer
-from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
-from allennlp.data.tokenizers.token import Token
-
-from typing import Dict, List
-import logging
-
-from overrides import overrides
-from blingfire import *
-
-from allennlp.common.checks import ConfigurationError
-from allennlp.common.file_utils import cached_path
-from allennlp.data.dataset_readers.dataset_reader import DatasetReader
-from allennlp.data.fields import TextField, MetadataField
-from allennlp.data.instance import Instance
-from allennlp.data.tokenizers import Tokenizer
-from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
-from allennlp.data.tokenizers.token import Token
-
-from typing import Dict, Iterator, List
-
-import torch
-import torch.nn as nn
-from torch.nn.functional import cosine_similarity
-from torch.autograd import Variable
-
-from allennlp.modules.text_field_embedders import TextFieldEmbedder
-
-from allennlp.common import Params, Tqdm
-from allennlp.common.util import prepare_environment
-
-prepare_environment(Params({}))  # sets the seeds to be fixed
-
-from core_metrics import calculate_metrics_plain, unrolled_to_ranked_result, load_qrels  # , out_of_domain_eval
-
-from torch.nn import MarginRankingLoss, Module
-from torch.optim import Adam, lr_scheduler
-
-from allennlp.data.vocabulary import Vocabulary
-from allennlp.modules.token_embedders import Embedding
-from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-
-from model_knrm import *
-from model_tk import *
-
-from allennlp.common import Params, Tqdm
-from allennlp.common.util import prepare_environment
-from allennlp.data.dataloader import PyTorchDataLoader
-
-prepare_environment(Params({}))  # sets the seeds to be fixed
-
-from allennlp.nn.util import move_to_device
-
-
 
 # region utils
 
@@ -496,10 +428,10 @@ if config["mode"] != "train":
     qrels = load_qrels(config["eval"])
 
     optimizer = Adam(model.parameters(), lr=1e-4, eps=1e-5)
-    criterion = MarginRankingLoss(margin=1, reduction='mean').to(device)
+    criterion = MarginRankingLoss(margin=1, reduction="mean").to(device)
 
-    print('Model', config["model"], 'total parameters:', sum(p.numel() for p in model.parameters() if p.requires_grad))
-    print('Network:', model)
+    print("Model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
+    print("Network:", model)
 
     training_results = []
     best_score = 0
@@ -513,11 +445,11 @@ if config["mode"] != "train":
             optimizer.zero_grad()
 
             batch = move_to_device(batch, device)
-            current_batch_size = batch['query_tokens']['tokens']['tokens'].shape[0]
+            current_batch_size = batch["query_tokens"]["tokens"]["tokens"].shape[0]
             target = torch.ones(current_batch_size, requires_grad=True).to(device)
 
-            target_relevant_doc = model.forward(batch['query_tokens'], batch['doc_pos_tokens'])
-            target_unrelevant_doc = model.forward(batch['query_tokens'], batch['doc_neg_tokens'])
+            target_relevant_doc = model.forward(batch["query_tokens"], batch["doc_pos_tokens"])
+            target_unrelevant_doc = model.forward(batch["query_tokens"], batch["doc_neg_tokens"])
 
             loss = criterion(target_relevant_doc, target_unrelevant_doc, target)
 
@@ -552,10 +484,10 @@ if config["mode"] != "train":
                     print("Metric early stopping triggered, exiting epoch")
                     break
 
-    with open(r'logs.txt', 'w+') as fp:
+    with open(r"logs.txt", "w+") as fp:
         for item in training_results:
             fp.write("%s\n" % item)
-        print('Done')
+        print("Done")
     sys.exit()
 
 """
@@ -564,7 +496,7 @@ eval
 
 if config["mode"] == "eval":
     test_loader = tuple_loader(config["eval_data"]["input"], vocab)
-    qrels = load_qrels(config["eval_data"]["eval"], config["eval_data"] == 'ds')
+    qrels = load_qrels(config["eval_data"]["eval"], config["eval_data"] == "ds")
 
     model.load_state_dict(torch.load(config.get("model_export_path"), map_location=device))
     model.eval()
