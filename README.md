@@ -6,7 +6,7 @@
  |_| \_|\___/ \___/ \__,_|_|\___| |_| \_\___|\__|_|  |_|\___| \_/ \__,_|_|
 ```
 
-neural information retrieval and ranking & extractive question using the following models:
+neural reranking & extractive question answering with:
 
 -   K-NRM: End-to-End Neural Ad-hoc Ranking with Kernel Pooling (Xiong et al., 2017: https://www.cs.cmu.edu/~zhuyund/papers/end-end-neural.pdf)
 -   TK: Transformer-Kernel Ranking (Mitra et al., 2020: https://arxiv.org/pdf/2104.09393.pdf)
