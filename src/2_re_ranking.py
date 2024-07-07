@@ -22,7 +22,6 @@ from allennlp.modules.token_embedders import Embedding
 from allennlp.nn.util import move_to_device
 from blingfire import text_to_words
 from overrides import overrides
-from torch.nn import MarginRankingLoss
 from torch.optim import Adam, lr_scheduler
 
 from core_metrics import calculate_metrics_plain, load_qrels, unrolled_to_ranked_result
@@ -417,22 +416,17 @@ lr_reducer = lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, factor=0.5)
 print("model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 print("network:", model)
 
-
 """
 train
 """
 
-if config["mode"] != "train":
+if config["mode"] == "train":
+    # load training and evaluation data
     train_loader = triple_loader(config["train_data"], vocab)
     val_loader = tuple_loader(config["validation_data"], vocab)
     qrels = load_qrels(config["eval"])
 
-    optimizer = Adam(model.parameters(), lr=1e-4, eps=1e-5)
-    criterion = MarginRankingLoss(margin=1, reduction="mean").to(device)
-
-    print("Model", config["model"], "total parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
-    print("Network:", model)
-
+    # train
     training_results = []
     best_score = 0
 
@@ -440,26 +434,35 @@ if config["mode"] != "train":
         metricEarlyStopper = EarlyStopper()
         losses = []
 
+        # looping through the training data
         for i, batch in enumerate(Tqdm.tqdm(train_loader)):
+            # setting model to train mode
             model.train()
             optimizer.zero_grad()
 
             batch = move_to_device(batch, device)
+
+            # target is always 1 because we want to rank the first input (target_relevant_doc) higher
             current_batch_size = batch["query_tokens"]["tokens"]["tokens"].shape[0]
             target = torch.ones(current_batch_size, requires_grad=True).to(device)
 
+            # forward: get output of model for relevant and un-relevant documents
             target_relevant_doc = model.forward(batch["query_tokens"], batch["doc_pos_tokens"])
             target_unrelevant_doc = model.forward(batch["query_tokens"], batch["doc_neg_tokens"])
 
             loss = criterion(target_relevant_doc, target_unrelevant_doc, target)
 
             loss.backward()
+            print(f"EPOCH: {epoch}\tBATCH: {i}\tLOSS: {loss:.3f}")
+
             optimizer.step()
             losses.append(loss.item())
 
+            # validation
             if (i + 1) % config["eval_step_size"] == 0:
                 model.eval()
                 results = {}
+                print("starting to read validation data")
 
                 for batch in Tqdm.tqdm(val_loader):
                     result = test_step(batch, model, device)
@@ -473,19 +476,24 @@ if config["mode"] != "train":
                 metrics = calculate_metrics_plain(ranked_results, qrels)
                 model.train()
                 metric = metrics["MRR@10"]
+                print(f"metric is {metric}")
 
+                # saving best model we have seen so far
                 if metric > best_score:
                     best_score = metric
-                    torch.save(model.state_dict(), config.get("model_export_path"))
+                    torch.save(model.state_dict(), model_export_path)
 
                 training_results.append(f"EPOCH: {epoch}\tBATCH: {i}\tLOSS: {loss:.3f}\t MRR@10: {metric}")
 
+                lr_reducer.step(metric)
                 if metricEarlyStopper.early_stop(metric):
                     print("Metric early stopping triggered, exiting epoch")
                     break
 
+    # export logs of epoch, iteration, loss and MRR metric
     with open(r"logs.txt", "w+") as fp:
         for item in training_results:
+            # write each item on a new line
             fp.write("%s\n" % item)
         print("Done")
     sys.exit()
@@ -495,13 +503,14 @@ eval
 """
 
 if config["mode"] == "eval":
-    test_loader = tuple_loader(config["eval_data"]["input"], vocab)
-    qrels = load_qrels(config["eval_data"]["eval"], config["eval_data"] == "ds")
+    test_loader = tuple_loader(config[config["eval_data"]]["input"], vocab)
+    qrels = load_qrels(config[config["eval_data"]]["eval"], config["eval_data"] == "ds")
 
-    model.load_state_dict(torch.load(config.get("model_export_path"), map_location=device))
+    model.load_state_dict(torch.load(model_export_path, map_location=device))
     model.eval()
     results = {}
 
+    print("Starting to read test data...")
     for batch in Tqdm.tqdm(test_loader):
         result = test_step(batch, model, device)
 
@@ -512,11 +521,12 @@ if config["mode"] == "eval":
                 results[query_id] = document_rank
 
     ranked_results = unrolled_to_ranked_result(results)
+
     metrics = calculate_metrics_plain(ranked_results, qrels)
     metric = metrics["MRR@10"]
 
-    with open(config.get("results_export_path"), "w+") as outfile:
-        for metric_name, metric_value in metrics.items():
-            outfile.write(f"{metric_name}  :  {metric_value}\n")
+    with open(results_export_path, "w+") as outfile:
+        for metric in metrics.keys():
+            outfile.write(f"{metric}  :  {metrics.get(metric)}\n")
     print(f"Metric is {metric}")
     sys.exit()
