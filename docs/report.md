@@ -2,27 +2,15 @@ Assignment: https://github.com/tuwien-information-retrieval/air-24-template/blob
 
 # Contributors and workload distribution
 
--   Miran Mamsaleh - 12019866
+- Yahya Jabary (11912007): Completed Part 1 and assisted with Part 2
+- Miran Mamsaleh (12019866): Contributed initial work on Part 2 
+- Maximilian Höller (52004266): Completed Part 3 and assisted with Part 2
 
-    Miran tried his best to contribute to the project, but due to personal reasons and the lack of access to GPU resources, Miran announced that he would quit around 72h before the deadline.
+Due to resource constraints and time limitations, the team had to redistribute some workload in the final days before the deadline. Yahya and Maximilian collaborated to complete Part 2, building on Miran's initial contributions.
 
-    Miran didn't contribute to the project. The remaining group members therefore had to take redistribute his workload in the remaining 72 hours.
+Due to the free tier of Google Colab being insufficient for the workload we had to purchase additional compute units with our own funds.
 
--   Maximilian Höller - 52004266 (responsible for Part 3)
-
-    Maximilian was initially responsible for the evaluation of Miran's models. After Miran's departure, Maximilian took over the implementation of the models with the help of Yahya. Maximilian paid for the Google Collab resources.
-
-    Maximilian then collaborated with Yahya to implement the second part of the assignment.
-
--   Yahya Jabary - 11912007 (responsible for Part 1)
-
-    Yahya implmented the aggregation method and evaluated it on the provided dataset.
-
-    After Miran's departure, Yahya collaborated with Maximilian to implement the second part of the assignment.
-
-In summary, due to the unexpected departure of Miran and the lack of access to GPU resources, because Google Collab's free tier was discontinued, we were unable to fully complete the assignment.
-
-See `git blame` for more details.
+See `git blame` for a more detailed breakdown of the contributions.
 
 # Part 1 - Test Collection Preparation
 
