@@ -1,12 +1,28 @@
 Assignment: https://github.com/tuwien-information-retrieval/air-24-template/blob/main/assignment_2.md
 
-Other solutions: https://github.com/orgs/tuwien-information-retrieval/repositories?type=all
+# Contributors and workload distribution
 
-Contributors:
+-   Miran Mamsaleh - 12019866
 
--   Yahya Jabary - 11912007
--   Maximilian Höller - 52004266
--   Miran Mamsaleh - ???
+    Miran tried his best to contribute to the project, but due to personal reasons and the lack of access to GPU resources, Miran announced that he would quit around 72h before the deadline.
+
+    Miran didn't contribute to the project. The remaining group members therefore had to take redistribute his workload in the remaining 72 hours.
+
+-   Maximilian Höller - 52004266 (responsible for Part 3)
+
+    Maximilian was initially responsible for the evaluation of Miran's models. After Miran's departure, Maximilian took over the implementation of the models with the help of Yahya. Maximilian paid for the Google Collab resources.
+
+    Maximilian then collaborated with Yahya to implement the second part of the assignment.
+
+-   Yahya Jabary - 11912007 (responsible for Part 1)
+
+    Yahya implmented the aggregation method and evaluated it on the provided dataset.
+
+    After Miran's departure, Yahya collaborated with Maximilian to implement the second part of the assignment.
+
+In summary, due to the unexpected departure of Miran and the lack of access to GPU resources, because Google Collab's free tier was discontinued, we were unable to fully complete the assignment.
+
+See `git blame` for more details.
 
 # Part 1 - Test Collection Preparation
 
@@ -214,12 +230,6 @@ Neural re-ranking is a technique to improve the quality of search results by usi
 
     Format: `word, embedding`
 
-## KNRM: End-to-End Neural Ad-hoc Ranking with Kernel Pooling
-
-See: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672f59ffbf8603e0f75edb2b6/matchmaker/models/knrm.py
-
-## TK: Interpretable & Time-Budget-Constrained Contextualization for Re-Ranking
-
 <br><br>
 
 # Part 3 - Extractive QA
@@ -248,7 +258,7 @@ See: https://github.com/sebastian-hofstaetter/matchmaker/blob/210b9da0c46ee6b672
 
 ## Process
 
-The first problem encountered was, that running a model from hugging face on a local CPU is infeasible. This is why we had to buy 100 computation units for Google Collab, since this is unfortunately not for free anymore. Once that was figured out, we ran the deepset/roberta-base-squad2 model on all 52.000 instances which took around five hours. 
+The first problem encountered was, that running a model from hugging face on a local CPU is infeasible. This is why we had to buy 100 computation units for Google Collab, since this is unfortunately not for free anymore. Once that was figured out, we ran the `deepset/roberta-base-squad2` model on all 52.000 instances which took around five hours.
 
 The results were evaluated to four digits as follows:
 
@@ -263,12 +273,13 @@ It is an average over the values for all around 50.000 values. If a token was in
 
 Note: Only the first answer was evaluated.
 
-
 <br><br>
 
 # Bonus Points
 
-Pull request for reproducibility: https://github.com/tuwien-information-retrieval/air-24-template-public/pull/1/commits
+Managing
+
+Merged pull request for reproducibility: https://github.com/tuwien-information-retrieval/air-24-template-public/pull/1/commits
 
 -   The AllenNLP library is unmaintained, has many deprecated dependencies that are not compatible with the latest versions of other libraries and relies on python@3.6< which has critical security vulnerabilities and can't be installed on arm64 architectures. We provide 2 containerized solutions to this problem.
 -   Little hack that chunks data and allows us to push multiple gigabytes of data to github without having to pay for LFS cloud storage: https://github.com/sueszli/github-lfs-bypass/blob/main/upload.sh

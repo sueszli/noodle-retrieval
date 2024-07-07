@@ -1,6 +1,12 @@
 _how to install_
 
-run any of the provided shell scripts. they decompress the data and install the necessary packages within the container of your choice.
+run `make` to see the available commands.
+
+```bash
+make help
+```
+
+which environment tool to use?
 
 -   conda:
 
