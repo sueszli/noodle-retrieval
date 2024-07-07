@@ -27,6 +27,130 @@ prepare_environment(Params({}))  # seed
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from allennlp.common import Params
+from allennlp.common.util import prepare_environment
+from allennlp.data.dataloader import PyTorchDataLoader
+from allennlp.nn.util import move_to_device
+
+
+from typing import Dict, List
+import logging
+
+from overrides import overrides
+from blingfire import *
+
+from allennlp.common.checks import ConfigurationError
+from allennlp.common.file_utils import cached_path
+from allennlp.data.dataset_readers.dataset_reader import DatasetReader
+from allennlp.data.fields import TextField, MetadataField
+from allennlp.data.instance import Instance
+from allennlp.data.tokenizers import Tokenizer
+from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
+from allennlp.data.tokenizers.token import Token
+
+from typing import Dict, List
+import logging
+
+from overrides import overrides
+from blingfire import *
+
+from allennlp.common.checks import ConfigurationError
+from allennlp.common.file_utils import cached_path
+from allennlp.data.dataset_readers.dataset_reader import DatasetReader
+from allennlp.data.fields import TextField, MetadataField
+from allennlp.data.instance import Instance
+from allennlp.data.tokenizers import Tokenizer
+from allennlp.data.token_indexers import TokenIndexer, SingleIdTokenIndexer
+from allennlp.data.tokenizers.token import Token
+
+from typing import Dict, Iterator, List
+
+import torch
+import torch.nn as nn
+from torch.nn.functional import cosine_similarity
+from torch.autograd import Variable
+
+from allennlp.modules.text_field_embedders import TextFieldEmbedder
+
+from allennlp.common import Params, Tqdm
+from allennlp.common.util import prepare_environment
+
+prepare_environment(Params({}))  # sets the seeds to be fixed
+
+from core_metrics import calculate_metrics_plain, unrolled_to_ranked_result, load_qrels  # , out_of_domain_eval
+
+from torch.nn import MarginRankingLoss, Module
+from torch.optim import Adam, lr_scheduler
+
+from allennlp.data.vocabulary import Vocabulary
+from allennlp.modules.token_embedders import Embedding
+from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
+
+from model_knrm import *
+from model_tk import *
+
+from allennlp.common import Params, Tqdm
+from allennlp.common.util import prepare_environment
+from allennlp.data.dataloader import PyTorchDataLoader
+
+prepare_environment(Params({}))  # sets the seeds to be fixed
+
+from allennlp.nn.util import move_to_device
+
+
+
+# region utils
+
+
+class EarlyStopper:
+    def __init__(self, patience=5, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_metric = 0
+
+    def early_stop(self, metric):
+        if metric > self.min_metric + self.min_delta:
+            self.min_metric = metric
+            self.counter = 0
+        else:
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False
+
+
+def test_step(batch, model, device):
+    # move batch to device and keep existing structure
+    batch = move_to_device(batch, device)
+
+    results = {}
+    with torch.no_grad():
+        output = model(batch["query_tokens"], batch["doc_tokens"]).tolist()
+        for i in range(len(batch["query_id"])):
+            query_id = batch["query_id"][i]
+            doc_id = batch["doc_id"][i]
+            score = output[i]
+            results.setdefault(query_id, []).append((doc_id, score))
+    return results
+
+
+def triple_loader(path: str, vocab):
+    _triple_reader = IrTripleDatasetReader(lazy=True, max_doc_length=200, max_query_length=30)
+    _triple_reader = _triple_reader.read(path)
+    _triple_reader.index_with(vocab)
+    return PyTorchDataLoader(_triple_reader, batch_size=64)
+
+
+def tuple_loader(path: str, vocab) -> PyTorchDataLoader:
+    _tuple_reader = IrLabeledTupleDatasetReader(lazy=True, max_doc_length=200, max_query_length=30)
+    _tuple_reader = _tuple_reader.read(path)
+    _tuple_reader.index_with(vocab)
+    return PyTorchDataLoader(_tuple_reader, batch_size=128)
+
+
+# endregion utils
+
 
 # region file-reader
 
@@ -249,6 +373,51 @@ class TK(nn.Module):
 # endregion models
 
 
+class EarlyStopper:
+    def __init__(self, patience=5, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_metric = 0
+
+    def early_stop(self, metric):
+        if metric > self.min_metric + self.min_delta:
+            self.min_metric = metric
+            self.counter = 0
+        else:
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False
+
+
+def test_step(batch, model, device):
+    batch = move_to_device(batch, device)
+    results = {}
+    with torch.no_grad():
+        output = model(batch["query_tokens"], batch["doc_tokens"]).tolist()
+        for i in range(len(batch["query_id"])):
+            query_id = batch["query_id"][i]
+            doc_id = batch["doc_id"][i]
+            score = output[i]
+            results.setdefault(query_id, []).append((doc_id, score))
+    return results
+
+
+def triple_loader(path: str, vocab):
+    _triple_reader = IrTripleDatasetReader(lazy=True, max_doc_length=200, max_query_length=30)
+    _triple_reader = _triple_reader.read(path)
+    _triple_reader.index_with(vocab)
+    return PyTorchDataLoader(_triple_reader, batch_size=64)
+
+
+def tuple_loader(path: str, vocab) -> PyTorchDataLoader:
+    _tuple_reader = IrLabeledTupleDatasetReader(lazy=True, max_doc_length=200, max_query_length=30)
+    _tuple_reader = _tuple_reader.read(path)
+    _tuple_reader.index_with(vocab)
+    return PyTorchDataLoader(_tuple_reader, batch_size=128)
+
+
 base_in = Path.cwd() / "data-merged" / "data" / "air-exercise-2"
 base_out = Path.cwd() / "output"
 
@@ -322,15 +491,100 @@ train
 """
 
 if config["mode"] != "train":
-    sys.exit()
+    train_loader = triple_loader(config["train_data"], vocab)
+    val_loader = tuple_loader(config["validation_data"], vocab)
+    qrels = load_qrels(config["eval"])
 
-# ...
+    optimizer = Adam(model.parameters(), lr=1e-4, eps=1e-5)
+    criterion = MarginRankingLoss(margin=1, reduction='mean').to(device)
+
+    print('Model', config["model"], 'total parameters:', sum(p.numel() for p in model.parameters() if p.requires_grad))
+    print('Network:', model)
+
+    training_results = []
+    best_score = 0
+
+    for epoch in range(config["epochs"]):
+        metricEarlyStopper = EarlyStopper()
+        losses = []
+
+        for i, batch in enumerate(Tqdm.tqdm(train_loader)):
+            model.train()
+            optimizer.zero_grad()
+
+            batch = move_to_device(batch, device)
+            current_batch_size = batch['query_tokens']['tokens']['tokens'].shape[0]
+            target = torch.ones(current_batch_size, requires_grad=True).to(device)
+
+            target_relevant_doc = model.forward(batch['query_tokens'], batch['doc_pos_tokens'])
+            target_unrelevant_doc = model.forward(batch['query_tokens'], batch['doc_neg_tokens'])
+
+            loss = criterion(target_relevant_doc, target_unrelevant_doc, target)
+
+            loss.backward()
+            optimizer.step()
+            losses.append(loss.item())
+
+            if (i + 1) % config["eval_step_size"] == 0:
+                model.eval()
+                results = {}
+
+                for batch in Tqdm.tqdm(val_loader):
+                    result = test_step(batch, model, device)
+                    for query_id, document_rank in result.items():
+                        if query_id in results.keys():
+                            results[query_id].extend(document_rank)
+                        else:
+                            results[query_id] = document_rank
+
+                ranked_results = unrolled_to_ranked_result(results)
+                metrics = calculate_metrics_plain(ranked_results, qrels)
+                model.train()
+                metric = metrics["MRR@10"]
+
+                if metric > best_score:
+                    best_score = metric
+                    torch.save(model.state_dict(), config.get("model_export_path"))
+
+                training_results.append(f"EPOCH: {epoch}\tBATCH: {i}\tLOSS: {loss:.3f}\t MRR@10: {metric}")
+
+                if metricEarlyStopper.early_stop(metric):
+                    print("Metric early stopping triggered, exiting epoch")
+                    break
+
+    with open(r'logs.txt', 'w+') as fp:
+        for item in training_results:
+            fp.write("%s\n" % item)
+        print('Done')
+    sys.exit()
 
 """
 eval
 """
 
-if config["mode"] != "eval":
-    sys.exit()
+if config["mode"] == "eval":
+    test_loader = tuple_loader(config["eval_data"]["input"], vocab)
+    qrels = load_qrels(config["eval_data"]["eval"], config["eval_data"] == 'ds')
 
-# ...
+    model.load_state_dict(torch.load(config.get("model_export_path"), map_location=device))
+    model.eval()
+    results = {}
+
+    for batch in Tqdm.tqdm(test_loader):
+        result = test_step(batch, model, device)
+
+        for query_id, document_rank in result.items():
+            if query_id in results.keys():
+                results[query_id].extend(document_rank)
+            else:
+                results[query_id] = document_rank
+
+    ranked_results = unrolled_to_ranked_result(results)
+    metrics = calculate_metrics_plain(ranked_results, qrels)
+    metric = metrics["MRR@10"]
+
+    with open(config.get("results_export_path"), "w+") as outfile:
+        for metric_name, metric_value in metrics.items():
+            outfile.write(f"{metric_name}  :  {metric_value}\n")
+    print(f"Metric is {metric}")
+    sys.exit()
