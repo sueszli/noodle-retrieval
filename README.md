@@ -15,9 +15,7 @@ neural information retrieval and ranking & extractive question using the followi
 
 <br><br>
 
----
-
-<br><br>
+# installation
 
 run `make` to see the available target environments to run the code.
 
