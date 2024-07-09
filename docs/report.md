@@ -230,38 +230,35 @@ These models were designed to perform re-ranking on the provided MS MARCO datase
 
 *KNRM (Kernel-based Neural Ranking Model)*
 
-The KNRM model utilizes a series of Gaussian kernels to capture semantic similarities between query and document terms at different levels of granularity. Our implementation includes the following key components:
-
-1. Word embeddings: We used pre-trained GloVe embeddings (42B tokens, 300d vectors) to represent query and document terms.
-2. Kernel pooling: We implemented 11 Gaussian kernels with learnable `mu` and `sigma` parameters to capture fine-grained semantic interactions.
-3. Log-sum-exp pooling: This technique was applied to aggregate kernel scores across query terms, providing a soft-TF ranking signal.
-4. Linear layer: A final linear transformation was used to produce the relevance score.
+- The KNRM model utilizes a series of Gaussian kernels to capture semantic similarities between query and document terms at different levels of granularity. Our implementation includes the following key components:
+    - Word embeddings: We used pre-trained GloVe embeddings (42B tokens, 300d vectors) to represent query and document terms.
+    - Kernel pooling: We implemented 11 Gaussian kernels with learnable `mu` and `sigma` parameters to capture fine-grained semantic interactions.
+    - Log-sum-exp pooling: This technique was applied to aggregate kernel scores across query terms, providing a soft-TF ranking signal.
+    - Linear layer: A final linear transformation was used to produce the relevance score.
 
 *TK (Transformer-Kernel) Model*
 
-The TK model extends KNRM by incorporating contextualized representations through transformer layers. Key features of our TK implementation include:
+- The TK model extends KNRM by incorporating contextualized representations through transformer layers. Key features of our TK implementation include:
+    - Transformer layers: We implemented multi-head self-attention mechanisms to capture contextual information within queries and documents.
+    - Kernel pooling: Similar to KNRM, we used 11 Gaussian kernels for semantic matching.
+    - Layer-wise aggregation: The model combines signals from multiple transformer layers, allowing for multi-level contextualization.
 
-1. Transformer layers: We implemented multi-head self-attention mechanisms to capture contextual information within queries and documents.
-2. Kernel pooling: Similar to KNRM, we used 11 Gaussian kernels for semantic matching.
-3. Layer-wise aggregation: The model combines signals from multiple transformer layers, allowing for multi-level contextualization.
+*Training Process*
 
-### Training Process
-
-We implemented a pairwise training approach using PyTorch, which involved the following steps:
-
-1. Data loading: We utilized custom DatasetReaders to efficiently load and preprocess the MS MARCO triples and evaluation tuples.
-2. Batching: We implemented dynamic batching to handle variable-length inputs efficiently.
-3. Loss function: We employed a margin ranking loss to optimize the relative ordering of relevant and non-relevant documents.
-4. Optimization: The Adam optimizer was used with a learning rate of 0.001 and a ReduceLROnPlateau scheduler for adaptive learning rate adjustment.
-5. Early stopping: We implemented an early stopping mechanism based on validation set performance to prevent overfitting.
+- We implemented a pairwise training approach using PyTorch, which involved the following steps:
+    - Data loading: We utilized custom DatasetReaders to efficiently load and preprocess the MS MARCO triples and evaluation tuples.
+    - Batching: We implemented dynamic batching to handle variable-length inputs efficiently.
+    - Loss function: We employed a margin ranking loss to optimize the relative ordering of relevant and non-relevant documents.
+    - Optimization: The Adam optimizer was used with a learning rate of `0.001` and a `ReduceLROnPlateau` scheduler for adaptive learning rate adjustment.
+    - Early stopping: We implemented an early stopping mechanism based on validation set performance to prevent overfitting.
 
 ## Evaluation
 
 For model evaluation, we implemented the following pipeline:
 
-1. Test set inference: We ran inference on the provided test sets, including MS MARCO and FiRA-2022.
-2. Metric calculation: We computed standard IR metrics, including MRR@10, using the provided core_metrics module.
-3. Cross-dataset evaluation: We evaluated our models on both in-domain (MS MARCO) and out-of-domain (FiRA-2022) data to assess generalization capabilities.
+- Test set inference: We ran inference on the provided test sets, including MS MARCO and FiRA-2022.
+- Metric calculation: We computed standard IR metrics, including MRR@10, using the provided core_metrics module.
+- Cross-dataset evaluation: We evaluated our models on both in-domain (MS MARCO) and out-of-domain (FiRA-2022) data to assess generalization capabilities.
 
 ## Results
 
