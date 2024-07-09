@@ -228,7 +228,7 @@ For the neural re-ranking task, we implemented two advanced architectures based 
 
 These models were designed to perform re-ranking on the provided MS MARCO dataset.
 
-#### KNRM (Kernel-based Neural Ranking Model)
+*KNRM (Kernel-based Neural Ranking Model)*
 
 The KNRM model utilizes a series of Gaussian kernels to capture semantic similarities between query and document terms at different levels of granularity. Our implementation includes the following key components:
 
@@ -237,7 +237,7 @@ The KNRM model utilizes a series of Gaussian kernels to capture semantic similar
 3. Log-sum-exp pooling: This technique was applied to aggregate kernel scores across query terms, providing a soft-TF ranking signal.
 4. Linear layer: A final linear transformation was used to produce the relevance score.
 
-#### TK (Transformer-Kernel) Model
+*TK (Transformer-Kernel) Model*
 
 The TK model extends KNRM by incorporating contextualized representations through transformer layers. Key features of our TK implementation include:
 
