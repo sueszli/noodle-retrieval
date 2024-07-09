@@ -13,6 +13,12 @@ neural reranking & extractive question answering with:
 
     based on: https://github.com/sebastian-hofstaetter/matchmaker
 
+<br><br>
+
+see `./docs/report.md` for a detailed report.
+
+<br><br>
+
 run `make` to see the available target environments to run the code.
 
 ```bash
