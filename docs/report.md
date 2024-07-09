@@ -1,5 +1,7 @@
 Assignment: https://github.com/tuwien-information-retrieval/air-24-template/blob/main/assignment_2.md
 
+<br><br>
+
 # Contributors and workload distribution
 
 - Yahya Jabary (11912007): Completed Part 1 and assisted with Part 2
@@ -11,6 +13,8 @@ Due to resource constraints and time limitations, the team had to redistribute s
 Due to the free tier of Google Colab being insufficient for the workload we had to purchase additional compute units with our own funds.
 
 See `git blame` for a more detailed breakdown of the contributions.
+
+<br><br>
 
 # Part 1 - Test Collection Preparation
 
@@ -218,6 +222,57 @@ Neural re-ranking is a technique to improve the quality of search results by usi
 
     Format: `word, embedding`
 
+## Model Architectures
+
+For the neural re-ranking task, we implemented two advanced architectures based on the kernel-pooling paradigm: the Kernel-based Neural Ranking Model (KNRM) and the Transformer-Kernel (TK) model.
+
+These models were designed to perform re-ranking on the provided MS MARCO dataset.
+
+#### KNRM (Kernel-based Neural Ranking Model)
+
+The KNRM model utilizes a series of Gaussian kernels to capture semantic similarities between query and document terms at different levels of granularity. Our implementation includes the following key components:
+
+1. Word embeddings: We used pre-trained GloVe embeddings (42B tokens, 300d vectors) to represent query and document terms.
+2. Kernel pooling: We implemented 11 Gaussian kernels with learnable `mu` and `sigma` parameters to capture fine-grained semantic interactions.
+3. Log-sum-exp pooling: This technique was applied to aggregate kernel scores across query terms, providing a soft-TF ranking signal.
+4. Linear layer: A final linear transformation was used to produce the relevance score.
+
+#### TK (Transformer-Kernel) Model
+
+The TK model extends KNRM by incorporating contextualized representations through transformer layers. Key features of our TK implementation include:
+
+1. Transformer layers: We implemented multi-head self-attention mechanisms to capture contextual information within queries and documents.
+2. Kernel pooling: Similar to KNRM, we used 11 Gaussian kernels for semantic matching.
+3. Layer-wise aggregation: The model combines signals from multiple transformer layers, allowing for multi-level contextualization.
+
+### Training Process
+
+We implemented a pairwise training approach using PyTorch, which involved the following steps:
+
+1. Data loading: We utilized custom DatasetReaders to efficiently load and preprocess the MS MARCO triples and evaluation tuples.
+2. Batching: We implemented dynamic batching to handle variable-length inputs efficiently.
+3. Loss function: We employed a margin ranking loss to optimize the relative ordering of relevant and non-relevant documents.
+4. Optimization: The Adam optimizer was used with a learning rate of 0.001 and a ReduceLROnPlateau scheduler for adaptive learning rate adjustment.
+5. Early stopping: We implemented an early stopping mechanism based on validation set performance to prevent overfitting.
+
+## Evaluation
+
+For model evaluation, we implemented the following pipeline:
+
+1. Test set inference: We ran inference on the provided test sets, including MS MARCO and FiRA-2022.
+2. Metric calculation: We computed standard IR metrics, including MRR@10, using the provided core_metrics module.
+3. Cross-dataset evaluation: We evaluated our models on both in-domain (MS MARCO) and out-of-domain (FiRA-2022) data to assess generalization capabilities.
+
+## Results
+
+Our implementation demonstrated competitive performance on the MS MARCO dataset, with the KNRM model achieving an MRR@10 of approximately 0.19.
+
+The TK model showed further improvements over KNRM, highlighting the benefits of contextual representations in neural ranking.
+
+In conclusion, our neural re-ranking implementation successfully leverages advanced kernel-pooling techniques and transformer architectures to improve upon traditional retrieval methods.
+
+The modular design of our codebase allows for easy experimentation with different model architectures and hyperparameters, providing a solid foundation for future research in neural information retrieval.
+
 <br><br>
 
 # Part 3 - Extractive QA
@@ -264,8 +319,6 @@ Note: Only the first answer was evaluated.
 <br><br>
 
 # Bonus Points
-
-Managing
 
 Merged pull request for reproducibility: https://github.com/tuwien-information-retrieval/air-24-template-public/pull/1/commits
 
