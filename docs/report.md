@@ -1,5 +1,7 @@
 Assignment: https://github.com/tuwien-information-retrieval/air-24-template/blob/main/assignment_2.md
 
+Team:
+
 - Maximilian Höller (52004266)
 - Miran Mamsaleh (12019866)
 - Yahya Jabary (11912007)
