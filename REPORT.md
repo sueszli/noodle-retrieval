@@ -2,19 +2,9 @@ Assignment: https://github.com/tuwien-information-retrieval/air-24-template/blob
 
 Team:
 
-- Maximilian Höller (52004266)
-- Miran Mamsaleh (12019866)
-- Yahya Jabary (11912007)
-
-<!--
-
-- Yahya Jabary (11912007): Completed Part 1 and assisted with Part 2
-- Miran Mamsaleh (12019866): Contributed initial work on Part 2 
-- Maximilian Höller (52004266): Completed Part 3 and assisted with Part 2
-
-Due to resource constraints and time limitations, the team had to redistribute some workload in the final days before the deadline. Yahya and Maximilian collaborated to complete Part 2, building on Miran's initial contributions.
-
--->
+- Maximilian Höller (52004266) - part 3, part 2 in collaboration with yahya
+- Miran Mamsaleh (12019866) - part 2, initial attempt
+- Yahya Jabary (11912007) - part 1, part 2 in collaboration with maximilian
 
 Due to the free tier of Google Colab being insufficient for the workload we had to purchase additional compute units with our own funds.
 
