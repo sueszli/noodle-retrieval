@@ -11,8 +11,6 @@ neural reranking & extractive question answering with:
 -   K-NRM: End-to-End Neural Ad-hoc Ranking with Kernel Pooling (Xiong et al., 2017: https://www.cs.cmu.edu/~zhuyund/papers/end-end-neural.pdf)
 -   TK: Transformer-Kernel Ranking (Mitra et al., 2020: https://arxiv.org/pdf/2104.09393.pdf) based on https://github.com/sebastian-hofstaetter/matchmaker
 
-see `./docs/report.md` for a detailed report.
-
 run `make` to see the available target environments to run the code.
 
 ```bash
