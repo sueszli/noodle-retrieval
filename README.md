@@ -8,8 +8,8 @@
 
 neural reranking & extractive question answering with:
 
--   K-NRM: End-to-End Neural Ad-hoc Ranking with Kernel Pooling (Xiong et al., 2017: https://www.cs.cmu.edu/~zhuyund/papers/end-end-neural.pdf)
--   TK: Transformer-Kernel Ranking (Mitra et al., 2020: https://arxiv.org/pdf/2104.09393.pdf), based on [matchmaker](https://github.com/sebastian-hofstaetter/matchmaker) by Hofstätter et al.
+-   k-nrm: end-to-end neural ad-hoc ranking with kernel pooling (xiong et al., 2017: https://www.cs.cmu.edu/~zhuyund/papers/end-end-neural.pdf)
+-   tk: transformer-kernel ranking (mitra et al., 2020: https://arxiv.org/pdf/2104.09393.pdf), based on [matchmaker](https://github.com/sebastian-hofstaetter/matchmaker) by hofstätter et al.
 
 run `make` to see the available target environments to run the code.
 
