@@ -268,13 +268,13 @@ For model evaluation, we implemented the following pipeline:
 
 ## Results
 
-Our implementation demonstrated competitive performance on the MS MARCO dataset, with the KNRM model achieving an MRR@10 of approximately 0.19.
+Our implementation demonstrated competitive performance on the MS MARCO dataset, with the KNRM model achieving an MRR@10 of approximately `0.19`.
 
 The TK model showed further improvements over KNRM, highlighting the benefits of contextual representations in neural ranking.
 
 In conclusion, our neural re-ranking implementation successfully leverages advanced kernel-pooling techniques and transformer architectures to improve upon traditional retrieval methods.
 
-The modular design of our codebase allows for easy experimentation with different model architectures and hyperparameters, providing a solid foundation for future research in neural information retrieval.
+We tried to implement everything in a clean procedual and maintainable manner so future work is possible.
 
 <br><br>
 
