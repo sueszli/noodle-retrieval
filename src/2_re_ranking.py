@@ -209,32 +209,43 @@ class IrLabeledTupleDatasetReader(DatasetReader):
 class KNRM(nn.Module):
     def __init__(self, word_embeddings: TextFieldEmbedder, n_kernels: int):
         super(KNRM, self).__init__()
+        
         self.word_embeddings = word_embeddings
         mu = torch.FloatTensor(self.kernel_mus(n_kernels)).view(1, 1, 1, n_kernels)
         sigma = torch.FloatTensor(self.kernel_sigmas(n_kernels)).view(1, 1, 1, n_kernels)
+        
         self.register_buffer("mu", mu)
         self.register_buffer("sigma", sigma)
         self.mu = mu
         self.sigma = sigma
         self.lin = nn.Linear(n_kernels, 1, bias=True)
+        
         torch.nn.init.uniform_(self.lin.weight, -0.001, 0.001)
         self.lin.bias.data.fill_(1)
 
     def forward(self, query: Dict[str, torch.Tensor], document: Dict[str, torch.Tensor]) -> torch.Tensor:
         query_pad_oov_mask = (query["tokens"]["tokens"] > 0).float()  # > 1 to also mask oov terms
         document_pad_oov_mask = (document["tokens"]["tokens"] > 0).float()
+        
         kernel_mask = torch.bmm(query_pad_oov_mask.unsqueeze(-1), document_pad_oov_mask.unsqueeze(-1).transpose(1, 2))
+        
         query_embeddings = self.word_embeddings(query)
         document_embeddings = self.word_embeddings(document)
         query_embeddings_normalized = query_embeddings / (query_embeddings.norm(p=2, dim=-1, keepdim=True) + 1e-13)
         document_embeddings_normalized = document_embeddings / (document_embeddings.norm(p=2, dim=-1, keepdim=True) + 1e-13)
+        
         translation_matrix = torch.bmm(query_embeddings_normalized, document_embeddings_normalized.transpose(-1, -2)).unsqueeze(-1)
+        
         kernel_results = torch.exp(-1 / 2 * torch.pow((translation_matrix - self.mu) / (self.sigma), 2))
         kernel_results = kernel_results * kernel_mask.unsqueeze(-1)
+        
         per_kernel_query = torch.sum(kernel_results, 2)
+        
         log_per_kernel_query = torch.log(torch.clamp(per_kernel_query, min=1e-10)) * 0.01
         log_per_kernel_query = log_per_kernel_query * query_pad_oov_mask.unsqueeze(-1)
+        
         phi = torch.sum(log_per_kernel_query, 1)
+        
         output = self.lin(phi)
         output = torch.squeeze(torch.tanh(output), 1)
         return output
